@@ -1,4 +1,4 @@
-import pathlib
+from pathlib import Path
 from os.path import join
 from sys import stderr
 
@@ -6,7 +6,7 @@ from sys import stderr
 class Connutils:
     @staticmethod
     def __get_path():
-        return pathlib.Path(__file__).parent.resolve()
+        return Path(__file__).parent.resolve()
 
     @staticmethod
     def port():

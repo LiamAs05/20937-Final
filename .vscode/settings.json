@@ -4,4 +4,9 @@
         "editor.formatOnSave": true,
         "editor.formatOnPaste": true,
     },
+    "python.testing.pytestArgs": [
+        "test"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
 }

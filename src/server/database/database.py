@@ -2,19 +2,22 @@ from os.path import join
 from pathlib import Path
 from sqlite3 import connect
 
-from utils.models import File, User
+from src.server.utils.models import File, User
 
 
 class Database:
-    def __init__(self, db_name: str = "defensive.db"):
+    def __init__(self, in_memory: bool = False):
         """
-        Constuctor of a Database object
-        This object needs to be unique
+        Constuctor of a unique Database object
 
         Args:
-            db_name (str, optional): For testing purposes. Defaults to "defensive.db".
+            in_memory (bool, optional): For testing purposes create in-memory DB. Defaults to False.
         """
-        self.conn = connect(join(Database.__get_path(), db_name))
+        if not in_memory:
+            self.conn = connect(join(Database.__get_path(), "defensive.db"))
+        else:
+            self.conn = connect("file::memory:?cache=shared")
+
         self.cursor = self.conn.cursor()
         self.create_tables_if_not_exists()
         self.users: dict[int, User] = self.get_all_users()

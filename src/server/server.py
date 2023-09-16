@@ -1,6 +1,6 @@
+from database.database import Database
 from utils.connutils import Connutils
 from utils.models import User
-from database.database import Database
 
 
 def main():

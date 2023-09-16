@@ -1,7 +1,8 @@
-from sqlite3 import connect
 from os.path import join
 from pathlib import Path
-from utils.models import User, File
+from sqlite3 import connect
+
+from utils.models import File, User
 
 
 class Database:
@@ -46,7 +47,8 @@ verified BOOLEAN)"""
 
         return users
 
-    def get_all_files(self) -> dict[int, Fil]
+    def get_all_files(self) -> dict[int, File]:
+        pass
 
     def add_user(self, user: User):
         insert_query = "INSERT INTO users (id, name, publickey, last_seen, aes_key) VALUES (?, ?, ?, ?, ?)"

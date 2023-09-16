@@ -27,7 +27,7 @@ class File:
         self.filename: str = filename
         self.path: str = path
         self.verified: bool = verified
- 
+
     def get_data(self):
         return (self.uid, self.filename, self.path, self.verified)
 

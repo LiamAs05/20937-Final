@@ -1,6 +1,6 @@
 from os.path import join
 from pathlib import Path
-from selectors import EVENT_READ, DefaultSelector
+from selectors import EVENT_WRITE, EVENT_READ, DefaultSelector
 from socket import socket
 from sys import stderr
 
@@ -16,6 +16,10 @@ class Connutils:
         self.sock.listen()
         self.sock.setblocking(False)
         self.sel.register(self.sock, EVENT_READ, self.accept_client)
+
+    def __del__(self):
+        self.sel.close()
+        self.sock.close()
 
     @staticmethod
     def __get_path() -> str:
@@ -53,16 +57,30 @@ class Connutils:
         conn, addr = sock.accept()
         print("accepted", addr)
         conn.setblocking(False)
-        self.sel.register(conn, EVENT_READ, self.display_functionality)
+        try:
+            self.sel.register(
+                conn, EVENT_READ | EVENT_WRITE, self.display_functionality
+            )
+        except Exception as e:
+            stderr.write(e, "\n")
+            self.sel.close()
+            self.sock.close()
 
     @staticmethod
     def display_functionality(conn, mask):
-        print("""Shalom Mr. User!
+        try:
+            conn.send(
+                b"""Shalom Mr. User!
 1. Register
 2. Login
 3. Update Public Key
 4. Send File
-""")
+"""
+            )
+            conn.recv(1024)
+        except Exception as e:
+            stderr.write(e, "\n")
+            conn.close()
 
     def start_selector(self) -> None:
         """_summary_
@@ -72,7 +90,6 @@ class Connutils:
         """
         while True:
             events = self.sel.select()
-            print(events)
             for key, mask in events:
                 callback = key.data
                 callback(key.fileobj, mask)

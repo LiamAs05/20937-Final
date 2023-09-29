@@ -1,7 +1,5 @@
-from database.database import Database
-from utils.connutils import Connutils
-
-# from utils.models import User
+from defensive.src.server.database.database import Database
+from defensive.src.server.utils.connutils import Connutils
 
 
 def main():

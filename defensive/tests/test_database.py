@@ -1,7 +1,6 @@
 import pytest
 
-from src.server.database.database import Database
-from src.server.utils.models import User
+from Defensive import *
 
 
 # Define a fixture to create a Database instance for testing

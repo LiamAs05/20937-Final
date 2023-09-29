@@ -1,11 +1,13 @@
 from database.database import Database
 from utils.connutils import Connutils
-from utils.models import User
+
+# from utils.models import User
 
 
 def main():
-    port = Connutils.port()  # Read connection port
     database = Database()  # Start DB Connection
+    connection = Connutils()
+    connection.start_selector()
 
 
 if __name__ == "__main__":

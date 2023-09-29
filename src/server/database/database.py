@@ -2,7 +2,7 @@ from os.path import join
 from pathlib import Path
 from sqlite3 import connect
 
-from src.server.utils.models import File, User
+from utils.models import File, User
 
 
 class Database:

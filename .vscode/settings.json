@@ -5,7 +5,7 @@
         "editor.formatOnPaste": true,
     },
     "python.testing.pytestArgs": [
-        "test"
+        "defensive/tests"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,

@@ -1,6 +1,6 @@
 import pytest
 
-from Defensive import *
+from defensive.src.server.database.database import Database, User
 
 
 # Define a fixture to create a Database instance for testing
@@ -33,7 +33,17 @@ def test_add_user(test_database):
 
 
 def test_get_all_users(test_database):
+    test_database.clear()
     test_add_user(test_database)
 
     users = test_database.get_all_users()
     assert len(users) == 3
+
+
+def test_clear(test_database):
+    test_user = User(name="Test User", pub=b"testkey", aes_key=b"aeskey")
+    # Add the user to the database
+    test_database.add_user(test_user)
+    # Check if the user exists in the database
+    test_database.clear()
+    assert len(test_database.users) == 0

@@ -2,7 +2,7 @@ from os.path import join
 from pathlib import Path
 from sqlite3 import connect
 
-from utils.models import File, User
+from defensive.src.server.utils.models import File, User
 
 
 class Database:
@@ -95,3 +95,15 @@ verified BOOLEAN)"""
             str: path of database.py
         """
         return Path(__file__).parent.resolve()
+
+    def clear(self) -> None:
+        """
+        Removes all users from the Users table in the database
+        Resets UID to 1
+        Deletes all data from all structs
+        """
+        delete_query = "DELETE FROM users"
+        self.cursor.execute(delete_query)
+        self.cursor.connection.commit()
+        self.users = {}
+        User.uid = 1

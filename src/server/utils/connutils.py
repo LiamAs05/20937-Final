@@ -53,18 +53,16 @@ class Connutils:
         conn, addr = sock.accept()
         print("accepted", addr)
         conn.setblocking(False)
-        self.sel.register(self.sock, EVENT_READ, self.display_functionality)
+        self.sel.register(conn, EVENT_READ, self.display_functionality)
 
-    def display_functionality(self, conn, mask):
-        data = conn.recv(1000)  # Should be ready
-
-        if data:
-            print("echoing", repr(data), "to", conn)
-            conn.send(data)  # Hope it won't block
-        else:
-            print("closing", conn)
-            self.sel.unregister(conn)
-            conn.close()
+    @staticmethod
+    def display_functionality(conn, mask):
+        print("""Shalom Mr. User!
+1. Register
+2. Login
+3. Update Public Key
+4. Send File
+""")
 
     def start_selector(self) -> None:
         """_summary_
@@ -74,6 +72,7 @@ class Connutils:
         """
         while True:
             events = self.sel.select()
+            print(events)
             for key, mask in events:
                 callback = key.data
                 callback(key.fileobj, mask)

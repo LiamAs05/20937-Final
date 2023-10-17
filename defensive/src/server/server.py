@@ -1,12 +1,12 @@
 from defensive.src.server.database.database import Database
-from defensive.src.server.utils.connutils import Connutils
-from sys import exit
+from defensive.src.server.utils.connutils import Server
+from sys import exit, stderr
 
 
 def main():
     database = Database()  # Start DB Connection
-    with Connutils() as connection:
-        connection.start_selector()
+    with Server() as connection:
+        connection.start()
 
 
 if __name__ == "__main__":
@@ -14,5 +14,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:  # Clean exit on keyboard interrupt
         print("Ctrl+C pressed, exiting...")
+    except Exception as e:
+        print(e, file=stderr)
     finally:
         exit(0)

@@ -2,13 +2,13 @@ import pytest
 from multiprocessing import Process
 from time import sleep
 from socket import socket
-from defensive.src.server.utils.connutils import Connutils
+from defensive.src.server.utils.connutils import Server
 
 
 # Define a fixture to create a Database instance for testing
 @pytest.fixture
 def test_conn():
-    return Connutils()
+    return Server()
 
 
 def test_connection(test_conn):

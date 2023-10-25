@@ -12,7 +12,7 @@ def test_conn():
 
 
 def test_connection(test_conn):
-    p = Process(target=test_conn.start_selector, args=())
+    p = Process(target=test_conn.start(), args=())
     p.start()
     s = socket()
     s.connect(("localhost", 3333))

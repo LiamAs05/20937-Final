@@ -61,6 +61,8 @@ class Server:
 """
         try:
             conn.send(msg)
+            print(conn.recv(1024))
+            conn.close()
         except Exception as e:
             print(e, file=stderr)
             conn.close()

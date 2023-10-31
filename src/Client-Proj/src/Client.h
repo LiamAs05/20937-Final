@@ -25,7 +25,7 @@ public:
 	~Client() = default;
 
 private:
-	void startup();
+	static void startup();
 	void resolveAddress();
 	void connect();
 	SOCKET ConnectSocket;

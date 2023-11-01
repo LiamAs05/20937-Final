@@ -5,6 +5,7 @@
 #include <iostream>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
+#include "Utils.h"
 
 #define REPEAT_THREE_TIMES(code) \
     for (int i = 0; i < 3; i++) { \
@@ -25,6 +26,9 @@ public:
 	~Client() = default;
 
 private:
+	std::string ip;
+	u_short port;
+	void get_transfer_info();
 	static void startup();
 	void resolveAddress();
 	void connect();

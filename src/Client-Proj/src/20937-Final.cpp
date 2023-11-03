@@ -5,5 +5,5 @@ int main()
     char recvbuf[1024] = {0};
     const char* sendbuf = R"(Hello world!)";
     auto c = Client();
-    c.send(sendbuf, strlen(sendbuf) + 1);
+    //c.send(sendbuf, strlen(sendbuf) + 1);
 }

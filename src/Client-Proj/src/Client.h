@@ -28,7 +28,10 @@ public:
 private:
 	std::string ip;
 	u_short port;
+	std::string name;
+	std::string path;
 	void get_transfer_info();
+	void get_me_info();
 	static void startup();
 	void resolveAddress();
 	void connect();

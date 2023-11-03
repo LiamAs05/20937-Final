@@ -3,7 +3,7 @@
 
 std::string Utils::read_file(const std::string& path)
 {
-	std::stringstream ret;
+	std::stringstream ret("");
 	std::ifstream file;
 
 	try {
@@ -22,4 +22,20 @@ std::string Utils::read_file(const std::string& path)
 	file.close();
 
 	return ret.str();
+}
+
+std::vector<std::string> Utils::split_lines(const std::string& content)
+{
+	std::stringstream ss(content);
+	std::vector<std::string> lines;
+
+	if (!content.empty())
+	{
+		std::string tmp;
+		while (std::getline(ss, tmp, '\n')) {
+			lines.push_back(tmp);
+		}
+	}
+
+	return lines;
 }

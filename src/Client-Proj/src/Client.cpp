@@ -3,7 +3,7 @@
 /// <summary>
 /// Constructor for the client class
 /// </summary>
-Client::Client()
+Client::Client() : ip(std::string()), port(0), name(std::string()), path(std::string())
 {
     get_transfer_info();  // Obtain transfer information from a file
     startup();           // Initialize the Winsock library
@@ -68,17 +68,47 @@ void Client::recv(char* buf, const int len) const
 /// </summary>
 void Client::get_transfer_info()
 {
-    const std::string path("C:/Users/liamd/Desktop/20937-Final/src/Client-Proj/x64/Debug/transfer.info");
-    std::string content = Utils::read_file(path);
+	constexpr u_short ip_and_port_index = 0;
+	constexpr u_short name_index = 1;
+	constexpr u_short path_index = 2;
 
-    // Extract the server's IP address from the file content
-    ip = content.substr(0, content.find(':'));
+    const std::string transfer_info_path("C:/Users/liamd/Desktop/20937-Final/src/Client-Proj/x64/Debug/transfer.info");
+	const std::string content = Utils::read_file(transfer_info_path);
+    std::vector<std::string> lines = Utils::split_lines(content);
+
+	// Extract the server's IP address from the file content
+    ip = lines[ip_and_port_index].substr(0, lines[ip_and_port_index].find(':'));
 
     // Extract and convert the server's port from the file content
-    const unsigned long long port_start = content.find(':') + 1;
-    const unsigned long long port_size = content.find('\n') - (content.find(':') + 1);
-    const std::string port_str = content.substr(port_start, port_size);
+    const unsigned long long port_start = lines[ip_and_port_index].find(':') + 1;
+    const unsigned long long port_size = lines[ip_and_port_index].find('\n') - (lines[ip_and_port_index].find(':') + 1);
+    const std::string port_str = lines[ip_and_port_index].substr(port_start, port_size);
     port = static_cast<u_short>(std::stoi(port_str));
+
+    // Extract name
+    name = lines[name_index];
+
+    // Extract file path
+    path = lines[path_index];
+}
+
+void Client::get_me_info()
+{
+    constexpr u_short name_index = 0;
+    constexpr u_short unique_id = 1;
+    constexpr u_short private_key = 2;
+
+    const std::string transfer_info_path("");
+    const std::string content = Utils::read_file(transfer_info_path);
+
+    if (content.empty())
+    {
+        std::cout << "me.info does not exist, registering..." << std::endl;
+    }
+
+    std::vector<std::string> lines = Utils::split_lines(content);
+	// TODO finish this
+
 }
 
 /// <summary>

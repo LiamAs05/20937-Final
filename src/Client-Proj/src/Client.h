@@ -12,6 +12,9 @@
         code \
     }
 
+#define ME_INFO_EXISTS 1
+#define ME_INFO_MISSING 0
+
 enum
 {
 	ERR = -1
@@ -26,15 +29,20 @@ public:
 	~Client() = default;
 
 private:
+	// internal client utility functions
+	void get_transfer_info();
+	bool get_me_info();
+	static void startup();
+	void resolveAddress();
+	void connect();
+
+	// internal client data
 	std::string ip;
 	u_short port;
 	std::string name;
 	std::string path;
-	void get_transfer_info();
-	void get_me_info();
-	static void startup();
-	void resolveAddress();
-	void connect();
+	std::string unique_id;
+	std::string private_key;
 	SOCKET ConnectSocket;
 	struct sockaddr_in clientService;
 };

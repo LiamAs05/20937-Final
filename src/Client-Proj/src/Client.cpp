@@ -6,9 +6,21 @@
 Client::Client() : ip(std::string()), port(0), name(std::string()), path(std::string())
 {
     get_transfer_info();  // Obtain transfer information from a file
+
     startup();           // Initialize the Winsock library
     resolveAddress();    // Resolve the server's address
     connect();           // Connect to the server
+
+    if (get_me_info() == ME_INFO_MISSING)
+    {
+	    // TODO register
+    }
+    else
+    {
+	    // TODO Login
+    }
+
+    
 }
 
 /// <summary>
@@ -92,11 +104,11 @@ void Client::get_transfer_info()
     path = lines[path_index];
 }
 
-void Client::get_me_info()
+bool Client::get_me_info()
 {
     constexpr u_short name_index = 0;
-    constexpr u_short unique_id = 1;
-    constexpr u_short private_key = 2;
+    constexpr u_short unique_id_index = 1;
+    constexpr u_short private_key_index = 2;
 
     const std::string transfer_info_path("");
     const std::string content = Utils::read_file(transfer_info_path);
@@ -104,11 +116,17 @@ void Client::get_me_info()
     if (content.empty())
     {
         std::cout << "me.info does not exist, registering..." << std::endl;
+        return ME_INFO_MISSING;
     }
 
     std::vector<std::string> lines = Utils::split_lines(content);
-	// TODO finish this
+    name = content[name_index];
+    unique_id = content[unique_id_index];
+    private_key = content[private_key_index];
 
+    std::cout << "me.info exists, logging in as " << name << std::endl;
+
+    return ME_INFO_EXISTS;
 }
 
 /// <summary>

@@ -1,6 +1,5 @@
 #include "Utils.h"
 
-
 std::string Utils::read_file(const std::string& path)
 {
 	std::stringstream ret("");

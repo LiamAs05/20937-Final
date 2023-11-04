@@ -7,11 +7,18 @@
 #include <ws2tcpip.h>
 #include "Utils.h"
 
+/**
+ * \brief Ever wanted something repeated 3 times?
+ * \param code Code block to repeat
+ */
 #define REPEAT_THREE_TIMES(code) \
     for (int i = 0; i < 3; i++) { \
         code \
     }
 
+/**
+ * \brief Readable booleans that check if `me.info` exists
+ */
 #define ME_INFO_EXISTS 1
 #define ME_INFO_MISSING 0
 

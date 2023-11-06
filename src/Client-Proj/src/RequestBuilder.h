@@ -1,15 +1,13 @@
 #pragma once
-#include <cstddef>
 #include <array>
 #include <vector>
 #include <algorithm>
 
-#define MAX_NAME_SIZE 255
-#define MAX_KEY_SIZE 160
-#define HEADER_SIZE 23
-
 enum HeaderSizes
 {
+	size_name = 255,
+	size_public_key = 160,
+	size_headers = 23,
 	size_req_client_id = 16,
 	size_req_code = 2,
 	size_req_payload_size = 4
@@ -29,29 +27,24 @@ enum Codes
 class RequestBuilder
 {
 public:
-	RequestBuilder(std::array<std::byte, size_req_client_id> unique_id, std::byte version);
-
+	RequestBuilder(char* unique_id, char version);
+	void set_client_id(char* unique_id);
+	std::vector<char> build_req_register(char* name);
+	std::vector<char> build_req_send_public_key(char* name, char* public_key);
+	std::vector<char> build_req_login(char* name);
+	std::vector<char> build_req_send_file(unsigned int content_size,
+		char* file_name,
+		std::vector<char> content
+	);
+	std::vector<char> build_req_valid_crc(char* file_name);
+	std::vector<char> build_req_invalid_crc(char* file_name);
+	std::vector<char> build_req_final_invalid_crc(char* file_name);
 
 
 private:
-	std::vector<std::byte> build_req_register(std::array<std::byte, MAX_NAME_SIZE> name);
-	std::vector<std::byte> build_req_send_public_key(std::array<std::byte, MAX_NAME_SIZE> name, std::array<std::byte, MAX_KEY_SIZE> public_key);
-	std::vector<std::byte> build_req_login(std::array<std::byte, MAX_NAME_SIZE> name);
-	std::vector<std::byte> build_req_send_file(std::array<std::byte, 4> content_size,
-		std::array<std::byte, MAX_NAME_SIZE> file_name,
-		std::vector<std::byte> content
-	);
-	std::vector<std::byte> build_req_valid_crc(std::array<std::byte, MAX_NAME_SIZE> file_name);
-	std::vector<std::byte> build_req_invalid_crc(std::array<std::byte, MAX_NAME_SIZE> file_name);
-	std::vector<std::byte> build_req_final_invalid_crc(std::array<std::byte, MAX_NAME_SIZE> file_name);
-
-	void add_fields_to_header(Codes code, std::array<std::byte, 4> payload_size);
-	/**
-	 * \brief Protocol fields
-	 */
-	std::array<std::byte, size_req_client_id> unique_id_;
-	std::byte version_;
-
-	std::array<std::byte, HEADER_SIZE> const_headers;
+	void add_fields_to_header(Codes code, unsigned int payload_size);
+	static std::array<char, 4> int_to_bytearray(int to_convert);
+	std::array<char, size_headers> const_headers;
+	std::array<char, size_headers> const_headers_backup;
 };
 

@@ -6,6 +6,7 @@
 Client::Client() : ip(std::string()), port(0), name(std::string()), path(std::string())
 {
     get_transfer_info();  // Obtain transfer information from a file
+    req_builder = RequestBuilder(const_cast<char*>("PLACEHOLDER"), 3);
 
     startup();           // Initialize the Winsock library
     resolveAddress();    // Resolve the server's address
@@ -17,6 +18,7 @@ Client::Client() : ip(std::string()), port(0), name(std::string()), path(std::st
     }
     else
     {
+        req_builder.set_client_id(unique_id.data());
 	    // TODO Login
     }
 

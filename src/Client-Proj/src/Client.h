@@ -6,6 +6,7 @@
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 #include "Utils.h"
+#include "RequestBuilder.h"
 
 /**
  * \brief Ever wanted something repeated 3 times?
@@ -51,6 +52,7 @@ private:
 	std::string unique_id;
 	std::string private_key;
 	SOCKET ConnectSocket;
+	RequestBuilder req_builder;
 	struct sockaddr_in clientService;
 };
 

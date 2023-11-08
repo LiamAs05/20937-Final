@@ -27,7 +27,8 @@ enum Codes
 class RequestBuilder
 {
 public:
-	RequestBuilder(char* unique_id, char version);
+	RequestBuilder() = delete;
+	RequestBuilder(const char* unique_id, char version);
 	void set_client_id(char* unique_id);
 	std::vector<char> build_req_register(char* name);
 	std::vector<char> build_req_send_public_key(char* name, char* public_key);

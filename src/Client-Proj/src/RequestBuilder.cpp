@@ -1,6 +1,8 @@
 #include "RequestBuilder.h"
 
-RequestBuilder::RequestBuilder(char* unique_id, const char version)
+#include <iostream>
+
+RequestBuilder::RequestBuilder(const char* unique_id, const char version)
 {
 	std::fill(std::begin(const_headers), std::end(const_headers), 0);
 	std::copy_n(unique_id, size_req_client_id, std::begin(const_headers));

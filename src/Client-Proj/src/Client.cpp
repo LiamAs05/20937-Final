@@ -3,10 +3,10 @@
 /// <summary>
 /// Constructor for the client class
 /// </summary>
-Client::Client() : ip(std::string()), port(0), name(std::string()), path(std::string())
+Client::Client() : ip(std::string()), port(0), name(std::string(size_name, 0)), path(std::string(size_name, 0)), req_builder(RequestBuilder("Place Holder", 3))
 {
+    std::vector<char> req;
     get_transfer_info();  // Obtain transfer information from a file
-    req_builder = RequestBuilder(const_cast<char*>("PLACEHOLDER"), 3);
 
     startup();           // Initialize the Winsock library
     resolveAddress();    // Resolve the server's address
@@ -14,12 +14,13 @@ Client::Client() : ip(std::string()), port(0), name(std::string()), path(std::st
 
     if (get_me_info() == ME_INFO_MISSING)
     {
-	    // TODO register
+	    req = req_builder.build_req_register(name.data());
+        send(req.data(), static_cast<unsigned>(req.size()));
     }
     else
     {
-        req_builder.set_client_id(unique_id.data());
-	    // TODO Login
+		req_builder.set_client_id(unique_id.data());
+        req_builder.build_req_login(name.data());
     }
 
     
@@ -30,7 +31,7 @@ Client::Client() : ip(std::string()), port(0), name(std::string()), path(std::st
 /// </summary>
 /// <param name="buf">Content of the message</param>
 /// <param name="len">Length of buf</param>
-void Client::send(const char* buf, const int len) const
+void Client::send(const char* buf, const unsigned len) const
 {
     int iResult = 0;
 
@@ -56,7 +57,7 @@ void Client::send(const char* buf, const int len) const
 /// </summary>
 /// <param name="buf">Buffer to receive the message</param>
 /// <param name="len">Length of buf</param>
-void Client::recv(char* buf, const int len) const
+void Client::recv(char* buf, const unsigned len) const
 {
     int iResult = 0;
     REPEAT_THREE_TIMES(
@@ -85,9 +86,7 @@ void Client::get_transfer_info()
 	constexpr u_short ip_and_port_index = 0;
 	constexpr u_short name_index = 1;
 	constexpr u_short path_index = 2;
-
-    const std::string transfer_info_path("C:/Users/liamd/Desktop/20937-Final/src/Client-Proj/x64/Debug/transfer.info");
-	const std::string content = Utils::read_file(transfer_info_path);
+	const std::string content = Utils::read_file("src/transfer.info");
     std::vector<std::string> lines = Utils::split_lines(content);
 
 	// Extract the server's IP address from the file content
@@ -112,7 +111,7 @@ bool Client::get_me_info()
     constexpr u_short unique_id_index = 1;
     constexpr u_short private_key_index = 2;
 
-    const std::string transfer_info_path("");
+    const std::string transfer_info_path("/src/me.info");
     const std::string content = Utils::read_file(transfer_info_path);
 
     if (content.empty())

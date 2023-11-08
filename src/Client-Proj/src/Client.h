@@ -32,8 +32,8 @@ class Client
 {
 public:
 	Client();
-	void send(const char* buf, int len) const;
-	void recv(char* buf, int len) const;
+	void send(const char* buf, unsigned len) const;
+	void recv(char* buf, unsigned len) const;
 	~Client() = default;
 
 private:

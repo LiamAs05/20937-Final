@@ -89,7 +89,7 @@ std::vector<char> RequestBuilder::build_req_final_invalid_crc(char* file_name)
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
-void RequestBuilder::add_fields_to_header(const Codes code, const unsigned int payload_size)
+void RequestBuilder::add_fields_to_header(const RequestCodes code, const unsigned int payload_size)
 {
 	std::array<char, size_req_code> converted_code;
 	converted_code[1] = static_cast<char>((code & 0xFF00) >> 8);

@@ -24,56 +24,77 @@ class RequestCodes(Enum):
     FINAL_INVALID_CRC = 1031
 
 
-@dataclass
 class RequestHeaders:
-    id: bytes[16]
-    version: bytes[1]
+    id: int
+    version: int
     code: RequestCodes
-    payload_size: bytes[4]
+    payload_size: int
+
+    @staticmethod
+    def __bytes_to_int(b: bytes) -> int:
+        return int.from_bytes(b, "little")
+
+    @staticmethod
+    def __bytes_to_code(b: bytes) -> RequestCodes:
+        print(int.from_bytes(b, "little"))
+        return RequestCodes(int.from_bytes(b, "little"))
+
+    def __init__(self, id, version, code, payload_size):
+        self.id = self.__bytes_to_int(id)
+        self.version = self.__bytes_to_int(version)
+        self.code = self.__bytes_to_code(code)
+        self.payload_size = self.__bytes_to_int(payload_size)
 
 
-@dataclass
 class ResponseHeaders:
-    version: bytes[1]
-    code: RequestCodes
-    payload_size: bytes[4]
+    version: bytes
+    code: bytes
+    payload_size: bytes
+
+    @staticmethod
+    def __code_to_bytes(code: ResponseCodes) -> bytes:
+        return code.value.to_bytes(2, "little")
+
+    @staticmethod
+    def __int_to_bytes(code: int, len: int) -> bytes:
+        return code.to_bytes(len, "little")
+
+    def __init__(self, version: int, code: ResponseCodes, payload_size: int):
+        self.version = self.__int_to_bytes(version, 1)
+        self.code = self.__code_to_bytes(code)
+        self.payload_size = self.__int_to_bytes(payload_size, 4)
+        
+    def dump(self) -> bytes:
+        return self.version + self.code + self.payload_size
 
 
 class Parser:
-    def __bytes_to_code(b: bytes) -> RequestCodes:
-        return RequestCodes(int.from_bytes(b, "little"))
-
-    def __code_to_bytes(
-        code: ResponseCodes
-        ) -> bytes:
-        return code.value.to_bytes(2, "little")
-
-    def __parse_headers(msg: bytes) -> RequestHeaders:
+    def parse_headers(msg: bytes) -> RequestHeaders:
         return RequestHeaders(
             msg[:16],
             msg[16:17],
-            Parser.__bytes_to_code([msg[17:19]]),
+            msg[17:19],
             msg[19:23],
         )
 
     def parse_message_content(msg: bytes) -> bytes:
-        headers = Parser.__parse_headers(msg)
+        headers = Parser.parse_headers(msg)
         msg = msg[:23]
 
-        match headers.code:
-            case RequestCodes.REGISTER:
-                pass
-            case RequestCodes.PUBKEY:
-                pass
-            case RequestCodes.LOGIN:
-                pass
-            case RequestCodes.SEND_FILE:
-                pass
-            case RequestCodes.VALID_CRC:
-                pass
-            case RequestCodes.INVALID_CRC:
-                pass
-            case RequestCodes.FINAL_INVALID_CRC:
-                pass
-            case _:
-                pass
+        # match headers.code:
+        #     case RequestCodes.REGISTER:
+        #         pass
+        #     case RequestCodes.PUBKEY:
+        #         pass
+        #     case RequestCodes.LOGIN:
+        #         pass
+        #     case RequestCodes.SEND_FILE:
+        #         pass
+        #     case RequestCodes.VALID_CRC:
+        #         pass
+        #     case RequestCodes.INVALID_CRC:
+        #         pass
+        #     case RequestCodes.FINAL_INVALID_CRC:
+        #         pass
+        #     case _:
+        #         pass

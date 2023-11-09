@@ -13,7 +13,7 @@ enum HeaderSizes
 	size_req_payload_size = 4
 };
 
-enum Codes
+enum RequestCodes
 {
 	code_register = 1025,
 	code_public_key = 1026,
@@ -43,7 +43,7 @@ public:
 
 
 private:
-	void add_fields_to_header(Codes code, unsigned int payload_size);
+	void add_fields_to_header(RequestCodes code, unsigned int payload_size);
 	static std::array<char, 4> int_to_bytearray(int to_convert);
 	std::array<char, size_headers> const_headers;
 	std::array<char, size_headers> const_headers_backup;

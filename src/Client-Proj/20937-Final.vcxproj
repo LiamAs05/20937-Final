@@ -22,11 +22,13 @@
     <ClCompile Include="src\20937-Final.cpp" />
     <ClCompile Include="src\Client.cpp" />
     <ClCompile Include="src\RequestBuilder.cpp" />
+    <ClCompile Include="src\ResponseParser.cpp" />
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Client.h" />
     <ClInclude Include="src\RequestBuilder.h" />
+    <ClInclude Include="src\ResponseParser.h" />
     <ClInclude Include="src\Utils.h" />
   </ItemGroup>
   <ItemGroup>

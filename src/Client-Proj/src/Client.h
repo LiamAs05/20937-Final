@@ -7,6 +7,7 @@
 #include <ws2tcpip.h>
 #include "Utils.h"
 #include "RequestBuilder.h"
+#include "RSAWrapper.h"
 
 /**
  * \brief Ever wanted something repeated 3 times?
@@ -53,6 +54,7 @@ private:
 	std::string private_key;
 	SOCKET ConnectSocket;
 	RequestBuilder req_builder;
+	RSAPrivateWrapper private_key_wrapper;
 	struct sockaddr_in clientService;
 };
 

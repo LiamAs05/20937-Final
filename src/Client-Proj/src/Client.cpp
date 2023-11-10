@@ -3,7 +3,7 @@
 /// <summary>
 /// Constructor for the client class
 /// </summary>
-Client::Client() : ip(std::string()), port(0), name(std::string(size_name, 0)), path(std::string(size_name, 0)), req_builder(RequestBuilder("Place Holder", 3))
+Client::Client() : ip(std::string()), port(0), name(std::string(size_name, 0)), path(std::string(size_name, 0)), req_builder(RequestBuilder("Place Holder", 3)), private_key_wrapper(RSAPrivateWrapper())
 {
     std::vector<char> req;
     get_transfer_info();  // Obtain transfer information from a file
@@ -16,6 +16,7 @@ Client::Client() : ip(std::string()), port(0), name(std::string(size_name, 0)), 
     {
 	    req = req_builder.build_req_register(name.data());
         send(req.data(), static_cast<unsigned>(req.size()));
+        private_key_wrapper.getPublicKey();
     }
     else
     {

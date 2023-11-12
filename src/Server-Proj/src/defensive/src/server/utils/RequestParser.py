@@ -1,6 +1,7 @@
 from enum import Enum
 from database.database import Database, User
 
+
 class ResponseCodes(Enum):
     REGISTER_SUCCESS = 2100
     REGISTER_FAIL = 2101
@@ -60,7 +61,7 @@ class ResponseHeaders:
         self.version = self.__int_to_bytes(version, 1)
         self.code = self.__code_to_bytes(code)
         self.payload_size = self.__int_to_bytes(payload_size, 4)
-        
+
     def dump(self) -> bytes:
         return self.version + self.code + self.payload_size
 
@@ -68,8 +69,8 @@ class ResponseHeaders:
 class Parser:
     def __init__(self) -> None:
         self.db = Database()
-    
-    @staticmethod   
+
+    @staticmethod
     def parse_headers(msg: bytes) -> RequestHeaders:
         return RequestHeaders(
             msg[:16],
@@ -78,35 +79,44 @@ class Parser:
             msg[19:23],
         )
 
+    def do_register(self, name) -> bytes:
+        if name in self.db.usernames:
+            return ResponseHeaders(3, ResponseCodes.REGISTER_FAIL, 0).dump()
+        u = User(name, b"\x01", b"\x01")
+        self.db.add_user(u)
+        return (
+            ResponseHeaders(3, ResponseCodes.REGISTER_SUCCESS, 16).dump() + u.uid_bytes
+        )
+        
+    def do_login(self, name, uid) -> bytes:
+        u: User = self.db.users.get(uid)
+        
+        if not u or not len(u.pubkey) == 160:
+            return ResponseHeaders(3, ResponseCodes.LOGIN_FAIL, 16).dump() + uid
+        
+        return ResponseHeaders(3, ResponseCodes.LOGIN_SUCCESS, 0) # TODO add 2105          
+
+
     def parse_message_content(self, msg: bytes) -> bytes:
         headers = Parser.parse_headers(msg)
+        uid = msg[:16]
         msg = msg[23:]
-
+        name = msg[:160].decode().rstrip("\x00")
+        
         match headers.code:
             case RequestCodes.REGISTER:
-                name = msg[:160].decode().rstrip("\x00")
-                if name in self.db.usernames:
-                    return ResponseHeaders(3,
-                                           ResponseCodes.REGISTER_FAIL,
-                                           0).dump()
-                else:
-                    u = User(name, b'\x01', b'\x01')
-                    self.db.add_user(u)
-                    return ResponseHeaders(3,
-                                           ResponseCodes.REGISTER_SUCCESS,
-                                           16).dump() + u.uid_bytes 
-                    
+                return self.do_register(name)
+            case RequestCodes.LOGIN:
+                return self.do_login(name, uid)
             # case RequestCodes.PUBKEY:
-            #     pass
-            # case RequestCodes.LOGIN:
-            #     pass
+            #     pass  TODO 2102
             # case RequestCodes.SEND_FILE:
-            #     pass
-            # case RequestCodes.VALID_CRC:
-            #     pass
-            # case RequestCodes.INVALID_CRC:
-            #     pass
-            # case RequestCodes.FINAL_INVALID_CRC:
-            #     pass
-            case _:
+            #     pass  TODO 2103
+            case RequestCodes.VALID_CRC | RequestCodes.FINAL_INVALID_CRC:
+                return (
+                    ResponseHeaders(3, ResponseCodes.MESSAGE_SUCCESS, 16).dump() + uid
+                )
+            case RequestCodes.INVALID_CRC:
                 pass
+            case _:
+                return ResponseHeaders(3, ResponseCodes.GENERAL_ERROR, 0)

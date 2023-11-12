@@ -1,9 +1,7 @@
 from datetime import datetime
-
+from os import urandom
 
 class User:
-    uid: int = 1
-
     def __init__(self, name: str, pub: bytes, aes_key: bytes):
         """
         Constructor of a User object
@@ -13,8 +11,8 @@ class User:
             pub (bytes): User public key
             aes_key (bytes): User AES key
         """
-        self.uid = User.uid
-        User.uid += 1
+        self.uid_bytes: bytes = urandom(16)
+        self.uid: str = self.uid_bytes.hex()
         self.name: str = name
         self.pubkey: bytes = pub
         self.last_seen: str = str(datetime.now())
@@ -40,17 +38,17 @@ Last Seen: {str(self.last_seen)}"""
 
 
 class File:
-    def __init__(self, uid: int, filename: str, path: str, verified: bool):
+    def __init__(self, uid: str, filename: str, path: str, verified: bool):
         """
         Constructor of a File object
 
         Args:
-            uid (int): UID of file owner
+            uid (str): UID of file owner
             filename (str): Name of file
             path (str): Full path of file
             verified (bool): Is file verified
         """
-        self.uid: int = uid
+        self.uid: str = uid
         self.filename: str = filename
         self.path: str = path
         self.verified: bool = verified

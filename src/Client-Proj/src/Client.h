@@ -6,6 +6,7 @@
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 #include "Utils.h"
+#include "ResponseParser.h"
 #include "RequestBuilder.h"
 #include "RSAWrapper.h"
 
@@ -37,6 +38,9 @@ public:
 	void recv(char* buf, unsigned len) const;
 	~Client() = default;
 
+	std::string get_name();
+	void set_name(const std::string& name);
+
 private:
 	// internal client utility functions
 	void get_transfer_info();
@@ -54,6 +58,7 @@ private:
 	std::string private_key;
 	SOCKET ConnectSocket;
 	RequestBuilder req_builder;
+	ResponseParser res_parser;
 	RSAPrivateWrapper private_key_wrapper;
 	struct sockaddr_in clientService;
 };

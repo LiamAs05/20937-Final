@@ -1,10 +1,8 @@
-from defensive.src.server.database.database import Database
-from defensive.src.server.utils.connutils import Server
+from utils.server import Server
 from sys import exit, stderr
 
 
 def main():
-    database = Database()  # Start DB Connection
     with Server() as connection:
         connection.start()
 

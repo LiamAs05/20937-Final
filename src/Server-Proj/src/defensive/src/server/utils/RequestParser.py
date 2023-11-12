@@ -1,7 +1,5 @@
-from dataclasses import dataclass
 from enum import Enum
-from typing import Union
-
+from database.database import Database, User
 
 class ResponseCodes(Enum):
     REGISTER_SUCCESS = 2100
@@ -36,7 +34,6 @@ class RequestHeaders:
 
     @staticmethod
     def __bytes_to_code(b: bytes) -> RequestCodes:
-        print(int.from_bytes(b, "little"))
         return RequestCodes(int.from_bytes(b, "little"))
 
     def __init__(self, id, version, code, payload_size):
@@ -69,6 +66,10 @@ class ResponseHeaders:
 
 
 class Parser:
+    def __init__(self) -> None:
+        self.db = Database()
+    
+    @staticmethod   
     def parse_headers(msg: bytes) -> RequestHeaders:
         return RequestHeaders(
             msg[:16],
@@ -77,24 +78,35 @@ class Parser:
             msg[19:23],
         )
 
-    def parse_message_content(msg: bytes) -> bytes:
+    def parse_message_content(self, msg: bytes) -> bytes:
         headers = Parser.parse_headers(msg)
-        msg = msg[:23]
+        msg = msg[23:]
 
-        # match headers.code:
-        #     case RequestCodes.REGISTER:
-        #         pass
-        #     case RequestCodes.PUBKEY:
-        #         pass
-        #     case RequestCodes.LOGIN:
-        #         pass
-        #     case RequestCodes.SEND_FILE:
-        #         pass
-        #     case RequestCodes.VALID_CRC:
-        #         pass
-        #     case RequestCodes.INVALID_CRC:
-        #         pass
-        #     case RequestCodes.FINAL_INVALID_CRC:
-        #         pass
-        #     case _:
-        #         pass
+        match headers.code:
+            case RequestCodes.REGISTER:
+                name = msg[:160].decode().rstrip("\x00")
+                if name in self.db.usernames:
+                    return ResponseHeaders(3,
+                                           ResponseCodes.REGISTER_FAIL,
+                                           0).dump()
+                else:
+                    u = User(name, b'\x01', b'\x01')
+                    self.db.add_user(u)
+                    return ResponseHeaders(3,
+                                           ResponseCodes.REGISTER_SUCCESS,
+                                           16).dump() + u.uid_bytes 
+                    
+            # case RequestCodes.PUBKEY:
+            #     pass
+            # case RequestCodes.LOGIN:
+            #     pass
+            # case RequestCodes.SEND_FILE:
+            #     pass
+            # case RequestCodes.VALID_CRC:
+            #     pass
+            # case RequestCodes.INVALID_CRC:
+            #     pass
+            # case RequestCodes.FINAL_INVALID_CRC:
+            #     pass
+            case _:
+                pass

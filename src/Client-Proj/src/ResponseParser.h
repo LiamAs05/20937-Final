@@ -6,6 +6,8 @@
 
 #define UNKNOWN_ERROR 0xFFFFFFFF
 
+class Client;
+
 enum ResponseSizes
 {
 	size_version = 1,
@@ -28,7 +30,13 @@ enum ResponseCodes {
 class ResponseParser
 {
 public:
-	ResponseParser() = default;
-	std::vector<char> parse_response(std::vector<char> response);
-	static unsigned short bytes_to_short(const std::vector<char>& bytes);
+	ResponseParser(Client* a);
+	std::vector<char> parse_response(const std::vector<char>& response);
+
+private:
+	void parse_code(ResponseCodes code);
+	static ResponseCodes get_code(const std::array<char, 2>& code_bytes);
+	static unsigned short bytes_to_short(const std::array<char, 2>& bytes);
+	static unsigned int bytes_to_int(const std::array<char, 4>& bytes);
+	Client* client;
 };

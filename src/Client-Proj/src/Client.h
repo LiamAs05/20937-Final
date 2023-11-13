@@ -19,18 +19,15 @@
         code \
     }
 
-/**
- * \brief Readable booleans that check if `me.info` exists
- */
-#define ME_INFO_EXISTS 1
-#define ME_INFO_MISSING 0
-
 enum
 {
-	ERR = -1
+	err = -1,
+	me_info_missing = true
 };
 
-class Client
+class
+
+Client
 {
 public:
 	Client();
@@ -40,11 +37,16 @@ public:
 
 	std::string get_name();
 	void set_name(const std::string& name);
+	std::string get_id();
+	void set_id(const std::string& id);
+	void set_id(std::array<char, size_req_client_id>& id);
 
 private:
 	// internal client utility functions
+	void establish_server_connectivity();
 	void get_transfer_info();
 	bool get_me_info();
+	void register_as_new_client();
 	static void startup();
 	void resolveAddress();
 	void connect();
@@ -54,7 +56,8 @@ private:
 	u_short port;
 	std::string name;
 	std::string path;
-	std::string unique_id;
+	std::string unique_id_str;
+	std::array<char, size_req_client_id> unique_id_bytes;
 	std::string private_key;
 	SOCKET ConnectSocket;
 	RequestBuilder req_builder;

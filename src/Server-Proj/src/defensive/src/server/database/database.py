@@ -74,10 +74,10 @@ verified BOOLEAN)"""
 
         # process the retrieved users as needed
         for user in existing_users:
-            users[user[UserAttributes.UID]] = User(
-                user[UserAttributes.NAME],
-                user[UserAttributes.PUBKEY],
-                user[UserAttributes.AES_KEY],
+            users[user[UserAttributes.UID.value]] = User(
+                user[UserAttributes.NAME.value],
+                user[UserAttributes.PUBKEY.value],
+                user[UserAttributes.AES_KEY.value],
             )
 
         return users
@@ -109,10 +109,10 @@ verified BOOLEAN)"""
 
         # Process the retrieved files as needed
         for file in existing_files:
-            files[file[FileAttributes.ID]] = File(
-                file[FileAttributes.FILE_NAME],
-                file[FileAttributes.PATH_NAME],
-                file[FileAttributes.VERIFIED],
+            files[file[FileAttributes.ID.value]] = File(
+                file[FileAttributes.FILE_NAME.value],
+                file[FileAttributes.PATH_NAME.value],
+                file[FileAttributes.VERIFIED.value],
             )
 
         return files

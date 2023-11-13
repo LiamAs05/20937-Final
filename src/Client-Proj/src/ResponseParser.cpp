@@ -6,31 +6,36 @@ ResponseParser::ResponseParser(Client* a)
 	client = a;
 }
 
-std::vector<char> ResponseParser::parse_response(const std::vector<char>& response)
+bool ResponseParser::parse_response(std::vector<char>& response)
 {
-	if (response.size() < size_code + size_payload_size + size_version + size_min_payload)
+	if (response.size() < size_code + size_payload_size + size_version)
 	{
 		std::cerr << "An unknown error occurred, invalid response from server." << std::endl;
 		_exit(UNKNOWN_ERROR);
 	}
 
-	ResponseCodes code = get_code({ response[1], response[2] });
-	const int payload_size = bytes_to_int({ response[3], response[4], response[5], response[6] });
+	const ResponseCodes code = get_code({ response[1], response[2] });
+	const unsigned payload_size = bytes_to_int({ response[3], response[4], response[5], response[6] });
 
-	parse_code(code);
+	return parse_code(code, response, payload_size);
 }
 
-void ResponseParser::parse_code(ResponseCodes code)
+bool ResponseParser::parse_code(ResponseCodes code, std::vector<char>& response, unsigned payload_size)
 {
+	// ReSharper disable once CppLocalVariableMayBeConst
+	std::vector<char> payload(payload_size);
+	std::copy_n(response.begin() + size_headers, payload_size, payload.begin());
+
 	switch (code)
 	{
 	case register_success:
-		std::cout << client->get_name();
-		break;
+		std::array<char, size_req_client_id> uid;
+		client->recv(uid.data(), size_req_client_id);
+		client->set_id(uid);
+		return true;
 	case register_fail:
-		std::cout << client->get_name();
-		std::cout << "YAY";
-		break;
+		std::cout << "Registration has failed, restart as a new client..." << std::endl;
+		return false;
 	case public_key_success:
 		break;
 	case valid_crc:
@@ -42,11 +47,12 @@ void ResponseParser::parse_code(ResponseCodes code)
 	case login_fail:
 		break;
 	case general_error:
-		break;
+		return false;
 	default:
 		std::cout << "This is totally broken and shouldn't even be possible";
-		break;
+		return false;
 	}
+	return false;
 }
 
 ResponseCodes ResponseParser::get_code(const std::array<char, 2>& code)

@@ -3,31 +3,20 @@
 /// <summary>
 /// Constructor for the client class
 /// </summary>
-Client::Client() : ip(std::string()), port(0), name(std::string(size_name, 0)), path(std::string(size_name, 0)), req_builder(RequestBuilder("Place Holder", 3)), res_parser(ResponseParser(this)), private_key_wrapper(RSAPrivateWrapper())
+Client::Client() :
+    ip(std::string()), port(0), name(std::string(size_name, 0)),
+	path(std::string(size_name, 0)), unique_id_str(std::string()),
+	unique_id_bytes(std::array<char, size_req_client_id>()), private_key(std::string()),
+	req_builder(RequestBuilder("Place Holder", 3)),
+	res_parser(ResponseParser(this)), private_key_wrapper(RSAPrivateWrapper())
 {
-    std::vector<char> req;
     get_transfer_info();  // Obtain transfer information from a file
 
     startup();           // Initialize the Winsock library
     resolveAddress();    // Resolve the server's address
     connect();           // Connect to the server
 
-    if (get_me_info() == ME_INFO_MISSING)
-    {
-	    req = req_builder.build_req_register(name.data());
-        send(req.data(), static_cast<unsigned>(req.size()));
-        recv(req.data(), 1024);
-        res_parser.parse_response(req);
-		
-        private_key_wrapper.getPublicKey();
-    }
-    else
-    {
-		req_builder.set_client_id(unique_id.data());
-        req_builder.build_req_login(name.data());
-    }
-
-    
+    establish_server_connectivity();    // Login or Register to server
 }
 
 /// <summary>
@@ -52,7 +41,7 @@ void Client::send(const char* buf, const unsigned len) const
                 "send failed: %d\n", WSAGetLastError());
             closesocket(ConnectSocket);
             WSACleanup();
-            _exit(ERR);
+            _exit(err);
         }
 }
 
@@ -78,7 +67,7 @@ void Client::recv(char* buf, const unsigned len) const
         else if (iResult == SOCKET_ERROR) {
             printf("Server Responded with an Error:\n"
                 "recv failed: %d\n", WSAGetLastError());
-            _exit(ERR);
+            _exit(err);
         }
 }
 
@@ -90,6 +79,39 @@ std::string Client::get_name()
 void Client::set_name(const std::string& name)
 {
     this->name = name;
+}
+
+std::string Client::get_id()
+{
+    return this->unique_id_str;
+}
+
+void Client::set_id(const std::string& id)
+{
+    this->unique_id_str = id;
+    //std::vector<char> id_str_to_hex = Utils::hex_val(id);
+    //std::copy_n(id_str_to_hex.begin(), size_req_client_id, this->unique_id_bytes.begin());
+}
+
+void Client::set_id(std::array<char, size_req_client_id>& id)
+{
+    std::copy_n(std::begin(id), size_req_client_id, this->unique_id_bytes.begin());
+	std::vector<char> vector_id(size_req_client_id);
+    std::copy_n(id.begin(), id.size(), vector_id.begin());
+    this->unique_id_str = Utils::hex_str(vector_id);
+}
+
+void Client::establish_server_connectivity()
+{
+    if (me_info_missing == get_me_info())
+    {
+        register_as_new_client();
+    }
+    else
+    {
+        req_builder.set_client_id(unique_id_bytes.data());
+        req_builder.build_req_login(name.data());
+    }
 }
 
 /// <summary>
@@ -125,23 +147,36 @@ bool Client::get_me_info()
     constexpr u_short unique_id_index = 1;
     constexpr u_short private_key_index = 2;
 
-    const std::string transfer_info_path("/src/me.info");
-    const std::string content = Utils::read_file(transfer_info_path);
+    const std::string me_info_path("src/me.info");
+	const std::string content = Utils::read_file(me_info_path);
 
     if (content.empty())
     {
         std::cout << "me.info does not exist, registering..." << std::endl;
-        return ME_INFO_MISSING;
+        return me_info_missing;
     }
 
-    std::vector<std::string> lines = Utils::split_lines(content);
-    name = content[name_index];
-    unique_id = content[unique_id_index];
-    private_key = content[private_key_index];
+    const std::vector<std::string> lines = Utils::split_lines(content);
+    name = lines[name_index];
+    unique_id_str = lines[unique_id_index];
+    private_key = lines[private_key_index];
 
     std::cout << "me.info exists, logging in as " << name << std::endl;
 
-    return ME_INFO_EXISTS;
+    return me_info_missing;
+}
+
+void Client::register_as_new_client()
+{
+    std::vector req(req_builder.build_req_register(name.data()));
+
+	send(req.data(), static_cast<unsigned>(req.size()));
+    recv(req.data(), size_res_headers);
+
+    if (!res_parser.parse_response(req))
+    {
+        _exit(err);
+    }
 }
 
 /// <summary>
@@ -154,7 +189,7 @@ void Client::startup()
     const int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
         printf("WSAStartup failed with error: %d\n", iResult);
-        _exit(ERR);
+        _exit(err);
     }
 }
 
@@ -167,7 +202,7 @@ void Client::resolveAddress()
     if (ConnectSocket == INVALID_SOCKET) {
         printf("Error at socket(): %ld\n", WSAGetLastError());
         WSACleanup();
-        _exit(ERR);
+        _exit(err);
     }
 
     clientService.sin_family = AF_INET;
@@ -199,6 +234,6 @@ void Client::connect()
                 printf("Server Responded with an Error:\n"
                     "Unable to connect to the server: %ld\n", WSAGetLastError());
                 WSACleanup();
-                _exit(ERR);
+                _exit(err);
             }
 }

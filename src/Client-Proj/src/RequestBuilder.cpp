@@ -1,21 +1,17 @@
 #include "RequestBuilder.h"
 
-#include <iostream>
 
 RequestBuilder::RequestBuilder(const char* unique_id, const char version)
 {
 	std::fill(std::begin(const_headers), std::end(const_headers), 0);
 	std::copy_n(unique_id, size_req_client_id, std::begin(const_headers));
 	const_headers[size_req_client_id] = version;
-	std::copy(std::begin(const_headers), std::end(const_headers), std::begin(const_headers_backup));
-	// TODO remember to backup headers after every req built
 }
 
 
 void RequestBuilder::set_client_id(char* unique_id)
 {
 	std::copy_n(unique_id, size_req_client_id, std::begin(const_headers));
-	std::copy_n(unique_id, size_req_client_id, std::begin(const_headers_backup));
 }
 
 std::vector<char> RequestBuilder::build_req_register(char* name)
@@ -46,7 +42,7 @@ std::vector<char> RequestBuilder::build_req_login(char* name)
 	return req;
 }
 
-std::vector<char> RequestBuilder::build_req_send_file(unsigned content_size, char* file_name, std::vector<char> content)
+std::vector<char> RequestBuilder::build_req_send_file(const unsigned content_size, char* file_name, std::vector<char> content)
 {
 	constexpr int content_size_bytes = 4;
 	add_fields_to_header(code_valid_crc, size_name + size_req_payload_size);

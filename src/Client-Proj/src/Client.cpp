@@ -17,6 +17,8 @@ Client::Client() :
     connect();           // Connect to the server
 
     establish_server_connectivity();    // Login or Register to server
+    req_builder.set_client_id(unique_id_bytes.data());
+    std::cout << unique_id_str;
 }
 
 /// <summary>
@@ -89,14 +91,14 @@ std::string Client::get_id()
 void Client::set_id(const std::string& id)
 {
     this->unique_id_str = id;
-    //std::vector<char> id_str_to_hex = Utils::hex_val(id);
-    //std::copy_n(id_str_to_hex.begin(), size_req_client_id, this->unique_id_bytes.begin());
+    std::vector<char> id_vec = Utils::hex_val(id);
+    std::copy_n(id_vec.begin(), size_req_client_id, unique_id_bytes.begin());
 }
 
 void Client::set_id(std::array<char, size_req_client_id>& id)
 {
-    std::copy_n(std::begin(id), size_req_client_id, this->unique_id_bytes.begin());
-	std::vector<char> vector_id(size_req_client_id);
+    std::copy_n(id.begin(), size_req_client_id, this->unique_id_bytes.begin());
+	std::vector<unsigned char> vector_id(size_req_client_id);
     std::copy_n(id.begin(), id.size(), vector_id.begin());
     this->unique_id_str = Utils::hex_str(vector_id);
 }
@@ -106,11 +108,14 @@ void Client::establish_server_connectivity()
     if (me_info_missing == get_me_info())
     {
         register_as_new_client();
+        req_builder.set_client_id(unique_id_bytes.data());
+    	create_me_info();
     }
     else
     {
         req_builder.set_client_id(unique_id_bytes.data());
-        req_builder.build_req_login(name.data());
+        std::vector c = req_builder.build_req_login(name.data());
+    	send(c.data(), c.size());
     }
 }
 
@@ -158,12 +163,19 @@ bool Client::get_me_info()
 
     const std::vector<std::string> lines = Utils::split_lines(content);
     name = lines[name_index];
-    unique_id_str = lines[unique_id_index];
+    set_id(lines[unique_id_index]);
     private_key = lines[private_key_index];
 
     std::cout << "me.info exists, logging in as " << name << std::endl;
 
-    return me_info_missing;
+    return me_info_exists;
+}
+
+void Client::create_me_info()
+{
+    std::stringstream content;
+    content << name << "\n" << unique_id_str << "\n" << "somekey";
+    Utils::write_file("src/me.info", content.str());
 }
 
 void Client::register_as_new_client()

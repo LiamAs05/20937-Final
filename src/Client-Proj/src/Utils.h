@@ -15,7 +15,7 @@ public:
 	static std::string read_file(const std::string& path);
 	static void write_file(const std::string& path, const std::string& content);
 	static std::vector<std::string> split_lines(const std::string& content);
-	static std::string hex_str(const std::vector<char>& data);
-	//static std::vector<char> hex_val(const std::string& data);
+	static std::string hex_str(const std::vector<unsigned char>& data);
+	static std::vector<char> hex_val(const std::string& input);
 };
 

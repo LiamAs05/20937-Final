@@ -22,12 +22,11 @@
 enum
 {
 	err = -1,
-	me_info_missing = true
+	me_info_missing = false,
+	me_info_exists = true
 };
 
-class
-
-Client
+class Client
 {
 public:
 	Client();
@@ -46,6 +45,7 @@ private:
 	void establish_server_connectivity();
 	void get_transfer_info();
 	bool get_me_info();
+	void create_me_info();
 	void register_as_new_client();
 	static void startup();
 	void resolveAddress();

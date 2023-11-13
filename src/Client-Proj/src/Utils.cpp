@@ -515,39 +515,25 @@ std::vector<std::string> Utils::split_lines(const std::string& content)
 	return lines;
 }
 
-std::string Utils::hex_str(const std::vector<char>& data)
+std::string Utils::hex_str(const std::vector<unsigned char>& data)
 {
 	std::stringstream ss;
-	ss << std::hex;
-
-	for (const char i : data)
-		ss << std::setw(2) << std::setfill('0') << static_cast<int>(i);
-
+	ss << std::hex << std::setfill('0');
+	for (const unsigned char i : data)
+	{
+		ss << std::setw(2) << static_cast<unsigned>(i);
+	}
 	return ss.str();
 }
 
-//std::vector<char> Utils::hex_val(const std::string& data)
-//{
-//	std::vector<unsigned short> output;
-//
-//	const char* p1 = data.c_str();
-//	const char* p2 = p1;
-//
-//	while (*p2 != NULL) {
-//		unsigned short byte;
-//
-//		++p2;
-//		if (*p2 != NULL) {
-//			++p2;
-//		}
-//
-//		std::stringstream sstm(std::string(p1, p2));
-//
-//		sstm.flags(std::ios_base::hex);
-//		sstm >> byte;
-//
-//		output.push_back(byte);
-//
-//		p1 += 2;
-//	}
-//}
+std::vector<char> Utils::hex_val(const std::string& input)
+{
+	std::vector<char> ch;
+
+	for (size_t i = 0; i < input.length(); i += 2)
+	{
+		ch.push_back(std::stoi(input.substr(i, 2), nullptr, 16));
+	}
+
+	return ch;
+}

@@ -107,6 +107,7 @@ class Parser:
             case RequestCodes.REGISTER:
                 return self.do_register(name)
             case RequestCodes.LOGIN:
+                print(uid)
                 return self.do_login(name, uid)
             # case RequestCodes.PUBKEY:
             #     pass  TODO 2102

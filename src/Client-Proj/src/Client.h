@@ -9,7 +9,7 @@
 #include "ResponseParser.h"
 #include "RequestBuilder.h"
 #include "RSAWrapper.h"
-
+#include "Base64Wrapper.h"
 /**
  * \brief Ever wanted something repeated 3 times?
  * \param code Code block to repeat
@@ -30,9 +30,9 @@ class Client
 {
 public:
 	Client();
-	void send(const char* buf, unsigned len) const;
-	void recv(char* buf, unsigned len) const;
-	~Client() = default;
+	void send(const char* buf, unsigned long long len);
+	void recv(char* buf, unsigned long long len);
+	~Client();
 
 	std::string get_name();
 	void set_name(const std::string& name);
@@ -45,8 +45,9 @@ private:
 	void establish_server_connectivity();
 	void get_transfer_info();
 	bool get_me_info();
-	void create_me_info();
+	void create_me_info() const;
 	void register_as_new_client();
+	void login_as_existing_client();
 	static void startup();
 	void resolveAddress();
 	void connect();
@@ -58,11 +59,10 @@ private:
 	std::string path;
 	std::string unique_id_str;
 	std::array<char, size_req_client_id> unique_id_bytes;
-	std::string private_key;
 	SOCKET ConnectSocket;
 	RequestBuilder req_builder;
 	ResponseParser res_parser;
-	RSAPrivateWrapper private_key_wrapper;
+	RSAPrivateWrapper* private_key_wrapper;
 	struct sockaddr_in clientService;
 };
 

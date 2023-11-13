@@ -6,9 +6,9 @@
 Client::Client() :
     ip(std::string()), port(0), name(std::string(size_name, 0)),
 	path(std::string(size_name, 0)), unique_id_str(std::string()),
-	unique_id_bytes(std::array<char, size_req_client_id>()), private_key(std::string()),
+	unique_id_bytes(std::array<char, size_req_client_id>()),
 	req_builder(RequestBuilder("Place Holder", 3)),
-	res_parser(ResponseParser(this)), private_key_wrapper(RSAPrivateWrapper())
+	res_parser(ResponseParser(this)), private_key_wrapper(nullptr)
 {
     get_transfer_info();  // Obtain transfer information from a file
 
@@ -17,90 +17,13 @@ Client::Client() :
     connect();           // Connect to the server
 
     establish_server_connectivity();    // Login or Register to server
-    req_builder.set_client_id(unique_id_bytes.data());
-    std::cout << unique_id_str;
+    std::cout << "User: " << name << "ID: " << unique_id_str;
 }
 
-/// <summary>
-/// Send a message to the server
-/// </summary>
-/// <param name="buf">Content of the message</param>
-/// <param name="len">Length of buf</param>
-void Client::send(const char* buf, const unsigned len) const
+Client::~Client()
 {
-    int iResult = 0;
-
-    REPEAT_THREE_TIMES(
-        {
-            iResult = ::send(ConnectSocket, buf, len, 0);
-            if (iResult > 0)
-                break;
-        }
-    )
-
-        if (iResult == SOCKET_ERROR) {
-            printf("Server Responded with an Error:\n"
-                "send failed: %d\n", WSAGetLastError());
-            closesocket(ConnectSocket);
-            WSACleanup();
-            _exit(err);
-        }
-}
-
-/// <summary>
-/// Receive a message from the server
-/// </summary>
-/// <param name="buf">Buffer to receive the message</param>
-/// <param name="len">Length of buf</param>
-void Client::recv(char* buf, const unsigned len) const
-{
-    int iResult = 0;
-    REPEAT_THREE_TIMES(
-        {
-            iResult = ::recv(ConnectSocket, buf, len, 0);
-            if (iResult > 0)
-                break;
-        }
-    )
-
-        if (iResult == 0) {
-            printf("Connection closed\n");
-        }
-        else if (iResult == SOCKET_ERROR) {
-            printf("Server Responded with an Error:\n"
-                "recv failed: %d\n", WSAGetLastError());
-            _exit(err);
-        }
-}
-
-std::string Client::get_name()
-{
-    return name;
-}
-
-void Client::set_name(const std::string& name)
-{
-    this->name = name;
-}
-
-std::string Client::get_id()
-{
-    return this->unique_id_str;
-}
-
-void Client::set_id(const std::string& id)
-{
-    this->unique_id_str = id;
-    std::vector<char> id_vec = Utils::hex_val(id);
-    std::copy_n(id_vec.begin(), size_req_client_id, unique_id_bytes.begin());
-}
-
-void Client::set_id(std::array<char, size_req_client_id>& id)
-{
-    std::copy_n(id.begin(), size_req_client_id, this->unique_id_bytes.begin());
-	std::vector<unsigned char> vector_id(size_req_client_id);
-    std::copy_n(id.begin(), id.size(), vector_id.begin());
-    this->unique_id_str = Utils::hex_str(vector_id);
+    delete private_key_wrapper;
+    private_key_wrapper = nullptr;
 }
 
 void Client::establish_server_connectivity()
@@ -109,13 +32,15 @@ void Client::establish_server_connectivity()
     {
         register_as_new_client();
         req_builder.set_client_id(unique_id_bytes.data());
+        private_key_wrapper = new RSAPrivateWrapper();
     	create_me_info();
+        Utils::write_file("src/priv.key", private_key_wrapper->getPrivateKey());
     }
     else
     {
-        req_builder.set_client_id(unique_id_bytes.data());
-        std::vector c = req_builder.build_req_login(name.data());
-    	send(c.data(), c.size());
+        login_as_existing_client();
+        const auto key = Utils::read_file("src/priv.key");   // TODO make sure key can be put in string
+        private_key_wrapper = new RSAPrivateWrapper(key);
     }
 }
 
@@ -164,17 +89,17 @@ bool Client::get_me_info()
     const std::vector<std::string> lines = Utils::split_lines(content);
     name = lines[name_index];
     set_id(lines[unique_id_index]);
-    private_key = lines[private_key_index];
+    private_key_wrapper = new RSAPrivateWrapper(Base64Wrapper::decode(lines[private_key_index]));
 
     std::cout << "me.info exists, logging in as " << name << std::endl;
 
     return me_info_exists;
 }
 
-void Client::create_me_info()
+void Client::create_me_info() const
 {
     std::stringstream content;
-    content << name << "\n" << unique_id_str << "\n" << "somekey";
+    content << name << "\n" << unique_id_str << "\n" << Base64Wrapper::encode(private_key_wrapper->getPrivateKey());
     Utils::write_file("src/me.info", content.str());
 }
 
@@ -182,7 +107,20 @@ void Client::register_as_new_client()
 {
     std::vector req(req_builder.build_req_register(name.data()));
 
-	send(req.data(), static_cast<unsigned>(req.size()));
+	send(req.data(), req.size());
+    recv(req.data(), size_res_headers);
+
+    if (!res_parser.parse_response(req))
+    {
+        _exit(err);
+    }
+}
+
+void Client::login_as_existing_client()
+{
+    req_builder.set_client_id(unique_id_bytes.data());
+    std::vector req(req_builder.build_req_login(name.data()));
+    send(req.data(), req.size());
     recv(req.data(), size_res_headers);
 
     if (!res_parser.parse_response(req))
@@ -248,4 +186,86 @@ void Client::connect()
                 WSACleanup();
                 _exit(err);
             }
+}
+
+/// <summary>
+/// Send a message to the server
+/// </summary>
+/// <param name="buf">Content of the message</param>
+/// <param name="len">Length of buf</param>
+void Client::send(const char* buf, const unsigned long long len)
+{
+    int iResult = 0;
+
+    REPEAT_THREE_TIMES(
+        {
+            iResult = ::send(ConnectSocket, buf, len, 0);
+            if (iResult > 0)
+                break;
+        }
+    )
+
+        if (iResult == SOCKET_ERROR) {
+            printf("Server Responded with an Error:\n"
+                "send failed: %d\n", WSAGetLastError());
+            closesocket(ConnectSocket);
+            WSACleanup();
+            _exit(err);
+        }
+}
+
+/// <summary>
+/// Receive a message from the server
+/// </summary>
+/// <param name="buf">Buffer to receive the message</param>
+/// <param name="len">Length of buf</param>
+void Client::recv(char* buf, const unsigned long long len)
+{
+    int iResult = 0;
+    REPEAT_THREE_TIMES(
+        {
+            iResult = ::recv(ConnectSocket, buf, len, 0);
+            if (iResult > 0)
+                break;
+        }
+    )
+
+        if (iResult == 0) {
+            printf("Connection closed\n");
+        }
+        else if (iResult == SOCKET_ERROR) {
+            printf("Server Responded with an Error:\n"
+                "recv failed: %d\n", WSAGetLastError());
+            _exit(err);
+        }
+}
+
+std::string Client::get_name()
+{
+    return name;
+}
+
+void Client::set_name(const std::string& name)
+{
+    this->name = name;
+}
+
+std::string Client::get_id()
+{
+    return this->unique_id_str;
+}
+
+void Client::set_id(const std::string& id)
+{
+    this->unique_id_str = id;
+    std::vector<char> id_vec = Utils::hex_val(id);
+    std::copy_n(id_vec.begin(), size_req_client_id, unique_id_bytes.begin());
+}
+
+void Client::set_id(std::array<char, size_req_client_id>& id)
+{
+    std::copy_n(id.begin(), size_req_client_id, this->unique_id_bytes.begin());
+    std::vector<unsigned char> vector_id(size_req_client_id);
+    std::copy_n(id.begin(), id.size(), vector_id.begin());
+    this->unique_id_str = Utils::hex_str(vector_id);
 }

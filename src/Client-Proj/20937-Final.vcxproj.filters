@@ -70,6 +70,9 @@
     <None Include="src\me.info">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="src\priv.key">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\cool_file.txt">

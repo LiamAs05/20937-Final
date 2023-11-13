@@ -25,34 +25,40 @@ bool ResponseParser::parse_code(ResponseCodes code, std::vector<char>& response,
 	// ReSharper disable once CppLocalVariableMayBeConst
 	std::vector<char> payload(payload_size);
 	std::copy_n(response.begin() + size_headers, payload_size, payload.begin());
+	std::array<char, size_req_client_id> uid;
 
 	switch (code)
 	{
 	case register_success:
-		std::array<char, size_req_client_id> uid;
 		client->recv(uid.data(), size_req_client_id);
 		client->set_id(uid);
+		std::cout << "Client ID: " << client->get_id();
 		return true;
 	case register_fail:
-		std::cout << "Registration has failed, restart as a new client..." << std::endl;
+		std::cerr << "Registration has failed, restart as a new client..." << std::endl;
 		return false;
 	case public_key_success:
-		break;
+		return true;
 	case valid_crc:
-		break;
+		return true;
 	case message_success:
-		break;
-	case login_success:
-		break;
-	case login_fail:
-		break;
-	case general_error:
+		client->recv(uid.data(), size_req_client_id);
+		client->set_id(uid);
+		std::cout << "This concludes our session, Goodbye client " << client->get_id();
 		return false;
-	default:
-		std::cout << "This is totally broken and shouldn't even be possible";
+	case login_success:
+		return true;
+	case login_fail:
+		client->recv(uid.data(), size_req_client_id);
+		client->set_id(uid);
+		std::cerr << "Login has failed, this can happen either when\n\
+1. The username already exists in the DB\n\
+2. The Public RSA Key is invalid.\nClient ID: " << client->get_id() << std::endl;
+		return false;
+	case general_error:
+		std::cerr << "ERROR: General server failure" << std::endl;
 		return false;
 	}
-	return false;
 }
 
 ResponseCodes ResponseParser::get_code(const std::array<char, 2>& code)

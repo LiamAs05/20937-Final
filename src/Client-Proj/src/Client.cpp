@@ -8,7 +8,7 @@ Client::Client() :
 	path(std::string(size_name, 0)), unique_id_str(std::string()),
 	unique_id_bytes(std::array<char, size_req_client_id>()),
 	req_builder(RequestBuilder("Place Holder", 3)),
-	res_parser(ResponseParser(this)), private_key_wrapper(nullptr)
+	res_parser(ResponseParser(this)), private_key_wrapper(nullptr), aes_wrapper(nullptr)
 {
     get_transfer_info();  // Obtain transfer information from a file
 
@@ -17,14 +17,36 @@ Client::Client() :
     connect();           // Connect to the server
 
     establish_server_connectivity();    // Login or Register to server
-    std::cout << "User: " << name << "ID: " << unique_id_str;
+    std::cout << "LOGGED IN AS: User: " << name << " ID: " << unique_id_str << std::endl;
+
+	if (new_user) 
+    {
+        send_public_key();
+    }
 }
 
 Client::~Client()
 {
     delete private_key_wrapper;
+    delete aes_wrapper;
     private_key_wrapper = nullptr;
+    aes_wrapper = nullptr;
 }
+
+void Client::send_public_key()
+{
+    std::vector req(req_builder.build_req_send_public_key(name.data(), 
+        private_key_wrapper->getPublicKey().data()));
+
+    send(req.data(), req.size());
+    recv(req.data(), size_res_headers);
+
+    if (!res_parser.parse_response(req))
+    {
+        _exit(err);
+    }
+}
+
 
 void Client::establish_server_connectivity()
 {
@@ -34,13 +56,16 @@ void Client::establish_server_connectivity()
         req_builder.set_client_id(unique_id_bytes.data());
         private_key_wrapper = new RSAPrivateWrapper();
     	create_me_info();
-        Utils::write_file("src/priv.key", private_key_wrapper->getPrivateKey());
+        std::string x = Base64Wrapper::encode(private_key_wrapper->getPrivateKey());
+    	x.erase(std::remove(x.begin(), x.end(), '\n'), x.cend());
+    	Utils::write_file("src/priv.key", x);
     }
     else
     {
         login_as_existing_client();
-        const auto key = Utils::read_file("src/priv.key");   // TODO make sure key can be put in string
+        const auto key = Base64Wrapper::decode(Utils::file_dump("src/priv.key"));
         private_key_wrapper = new RSAPrivateWrapper(key);
+        new_user = false;
     }
 }
 
@@ -75,7 +100,6 @@ bool Client::get_me_info()
 {
     constexpr u_short name_index = 0;
     constexpr u_short unique_id_index = 1;
-    constexpr u_short private_key_index = 2;
 
     const std::string me_info_path("src/me.info");
 	const std::string content = Utils::read_file(me_info_path);
@@ -89,7 +113,6 @@ bool Client::get_me_info()
     const std::vector<std::string> lines = Utils::split_lines(content);
     name = lines[name_index];
     set_id(lines[unique_id_index]);
-    private_key_wrapper = new RSAPrivateWrapper(Base64Wrapper::decode(lines[private_key_index]));
 
     std::cout << "me.info exists, logging in as " << name << std::endl;
 
@@ -99,7 +122,9 @@ bool Client::get_me_info()
 void Client::create_me_info() const
 {
     std::stringstream content;
-    content << name << "\n" << unique_id_str << "\n" << Base64Wrapper::encode(private_key_wrapper->getPrivateKey());
+    auto x = Base64Wrapper::encode(private_key_wrapper->getPrivateKey());
+    x.erase(std::remove(x.begin(), x.end(), '\n'), x.cend());
+    content << name << "\n" << unique_id_str << "\n" << x;
     Utils::write_file("src/me.info", content.str());
 }
 
@@ -269,3 +294,15 @@ void Client::set_id(std::array<char, size_req_client_id>& id)
     std::copy_n(id.begin(), id.size(), vector_id.begin());
     this->unique_id_str = Utils::hex_str(vector_id);
 }
+
+void Client::set_aes_key(const std::vector<unsigned char>& new_key)
+{
+    aes_key = std::vector(new_key);
+}
+
+std::vector<unsigned char> Client::get_aes_key()
+{
+    return aes_key;
+}
+
+

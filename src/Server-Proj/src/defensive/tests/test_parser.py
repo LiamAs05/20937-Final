@@ -16,7 +16,7 @@ def test_parser():
 def test_parse_req():
     def code_to_bytes(code: ResponseCodes) -> bytes:
         return code.value.to_bytes(2, "little")
-    
+
     msg = (
         b"\x01"
         + b"\x00" * 15
@@ -40,5 +40,5 @@ def test_build_res():
         and h.payload_size == b"\xFF\x00\x00\x00"
         and h.code == b"\x39\x08"
     )
-    
-    assert h.dump() == b'\x03\x39\x08\xFF\x00\x00\x00'
+
+    assert h.dump() == b"\x03\x39\x08\xFF\x00\x00\x00"

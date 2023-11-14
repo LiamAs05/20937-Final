@@ -67,9 +67,6 @@
     <None Include="src\transfer.info">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="src\me.info">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="src\priv.key">
       <Filter>Resource Files</Filter>
     </None>

@@ -1,5 +1,7 @@
 #include "Utils.h"
 
+#include "ResponseParser.h"
+
 #define UNSIGNED(n) (n & 0xffffffff)
 
 unsigned long Utils::memcrc(char* content, size_t size)
@@ -482,13 +484,35 @@ std::string Utils::read_file(const std::string& path)
 	return ret.str();
 }
 
+std::string Utils::file_dump(const std::string& path)
+{
+	std::stringstream ret("");
+	std::ifstream file;
+
+	try {
+		std::string content;
+		file.open(path);
+
+		while (getline(file, content)) {
+			ret << content;
+		}
+	}
+	catch (const std::ifstream::failure& e) {
+		std::cerr << "Exception opening/reading "
+			<< path << "\n" << e.what() << std::endl;
+	}
+
+	file.close();
+
+	return ret.str();
+}
+
 void Utils::write_file(const std::string& path, const std::string& content)
 {
-	std::ofstream file;
+	std::ofstream file(path, std::ios::trunc);
 
 	try
 	{
-		file.open(path);
 		file << content;
 	}
 	catch (const std::ifstream::failure& e) {

@@ -1,5 +1,7 @@
 from enum import Enum
 from database.database import Database, User
+from utils.crypto import encrypt_key
+from os import urandom
 
 
 class ResponseCodes(Enum):
@@ -87,30 +89,49 @@ class Parser:
         return (
             ResponseHeaders(3, ResponseCodes.REGISTER_SUCCESS, 16).dump() + u.uid_bytes
         )
-        
+
     def do_login(self, name, uid) -> bytes:
-        u: User = self.db.users.get(uid)
-        
+        u: User = self.db.users.get(uid.hex())
+
         if not u or not len(u.pubkey) == 160:
             return ResponseHeaders(3, ResponseCodes.LOGIN_FAIL, 16).dump() + uid
-        
-        return ResponseHeaders(3, ResponseCodes.LOGIN_SUCCESS, 0) # TODO add 2105          
 
+        key_raw = urandom(16)
+        key = encrypt_key(u.pubkey, key_raw)
+        self.db.update_aes(uid, key_raw)
+        self.db.update_publickey(uid, u.pubkey)
+
+        return (
+            ResponseHeaders(3, ResponseCodes.LOGIN_SUCCESS, 16 + len(key)).dump()
+            + uid
+            + key
+        )
+
+    def do_public_key(self, uid, name, pub_key) -> bytes:
+        key_raw = urandom(16)
+        key = encrypt_key(pub_key, key_raw)
+        self.db.update_aes(uid, key_raw)
+        self.db.update_publickey(uid, pub_key)
+
+        return (
+            ResponseHeaders(3, ResponseCodes.PUBKEY_SUCCESS, 16 + len(key)).dump()
+            + uid
+            + key
+        )
 
     def parse_message_content(self, msg: bytes) -> bytes:
         headers = Parser.parse_headers(msg)
         uid = msg[:16]
         msg = msg[23:]
         name = msg[:160].decode().rstrip("\x00")
-        
+        pubkey = msg[255:]
         match headers.code:
             case RequestCodes.REGISTER:
                 return self.do_register(name)
             case RequestCodes.LOGIN:
-                print(uid)
                 return self.do_login(name, uid)
-            # case RequestCodes.PUBKEY:
-            #     pass  TODO 2102
+            case RequestCodes.PUBKEY:
+                return self.do_public_key(uid, name, pubkey)
             # case RequestCodes.SEND_FILE:
             #     pass  TODO 2103
             case RequestCodes.VALID_CRC | RequestCodes.FINAL_INVALID_CRC:

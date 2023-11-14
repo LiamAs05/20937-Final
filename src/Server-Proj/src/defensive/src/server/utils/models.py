@@ -1,8 +1,9 @@
 from datetime import datetime
 from os import urandom
 
+
 class User:
-    def __init__(self, name: str, pub: bytes, aes_key: bytes):
+    def __init__(self, name: str, pub: bytes, aes_key: bytes, uid: bytes = None):
         """
         Constructor of a User object
 
@@ -11,7 +12,7 @@ class User:
             pub (bytes): User public key
             aes_key (bytes): User AES key
         """
-        self.uid_bytes: bytes = urandom(16)
+        self.uid_bytes: bytes = urandom(16) if not uid else uid
         self.uid: str = self.uid_bytes.hex()
         self.name: str = name
         self.pubkey: bytes = pub

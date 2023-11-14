@@ -78,6 +78,7 @@ verified BOOLEAN)"""
                 user[UserAttributes.NAME.value],
                 user[UserAttributes.PUBKEY.value],
                 user[UserAttributes.AES_KEY.value],
+                bytes.fromhex(user[UserAttributes.UID.value])
             )
 
         return users
@@ -167,14 +168,31 @@ verified BOOLEAN)"""
         :param new_publickey: The new public key value.
         """
         update_query = "UPDATE users SET publickey = ? WHERE id = ?"
-
         try:
-            self.cursor.execute(update_query, (new_publickey, user_uid))
+            self.users[user_uid.hex()].pubkey = new_publickey
+            self.cursor.execute(update_query, (new_publickey, user_uid.hex()))
             self.cursor.connection.commit()
-            self.users[user_uid].publickey = new_publickey
+
             print(f"Public key updated successfully for user with ID {user_uid}")
         except Exception as e:
             print(f"Error updating public key: {e}")
+            
+    def update_aes(self, user_uid, new_aes):
+        """
+        Update the AES key for a given user.
+        :param user_uid: The user ID whose AES key needs to be updated.
+        :param new_aes_key: The new AES key value.
+        """
+        update_query = "UPDATE users SET aes_key = ? WHERE id = ?"
+
+        try:
+            self.users[user_uid.hex()].aes_key = new_aes
+            self.cursor.execute(update_query, (new_aes, user_uid.hex()))
+            self.cursor.connection.commit()
+
+            print(f"AES key updated successfully for user with ID {user_uid}")
+        except Exception as e:
+            print(f"Error updating AES key: {e}")
 
     @staticmethod
     def __get_path() -> str:

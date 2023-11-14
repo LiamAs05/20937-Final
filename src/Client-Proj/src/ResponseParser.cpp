@@ -24,32 +24,37 @@ bool ResponseParser::parse_code(ResponseCodes code, std::vector<char>& response,
 {
 	// ReSharper disable once CppLocalVariableMayBeConst
 	std::vector<char> payload(payload_size);
-	std::copy_n(response.begin() + size_headers, payload_size, payload.begin());
 	std::array<char, size_req_client_id> uid;
+	std::vector<unsigned char> aes(payload_size - 16);
+
+	if (payload_size) {
+		client->recv(payload.data(), payload_size);
+	}
 
 	switch (code)
 	{
 	case register_success:
-		client->recv(uid.data(), size_req_client_id);
+		std::copy_n(payload.begin(), size_req_client_id, uid.begin());
 		client->set_id(uid);
-		std::cout << "Client ID: " << client->get_id();
 		return true;
 	case register_fail:
 		std::cerr << "Registration has failed, restart as a new client..." << std::endl;
 		return false;
-	case public_key_success:
+	case public_key_success: case login_success:
+		std::copy(payload.begin() + 16, payload.end(), aes.begin());
+		client->set_aes_key(aes);
+		std::cout << "AES Key of length " << aes.size() << " starting with bytes "
+			<< std::hex << +aes[0] << +aes[1] << +aes[2] << +aes[3] << " received" << std::dec << std::endl;
 		return true;
 	case valid_crc:
 		return true;
 	case message_success:
-		client->recv(uid.data(), size_req_client_id);
+		std::copy_n(payload.begin(), size_req_client_id, uid.begin());
 		client->set_id(uid);
 		std::cout << "This concludes our session, Goodbye client " << client->get_id();
 		return false;
-	case login_success:
-		return true;
 	case login_fail:
-		client->recv(uid.data(), size_req_client_id);
+		std::copy_n(payload.begin(), size_req_client_id, uid.begin());
 		client->set_id(uid);
 		std::cerr << "Login has failed, this can happen either when\n\
 1. The username already exists in the DB\n\
@@ -73,8 +78,8 @@ unsigned short ResponseParser::bytes_to_short(const std::array<char, 2>& bytes)
 
 unsigned int ResponseParser::bytes_to_int(const std::array<char, 4>& bytes)
 {
-	return static_cast<unsigned short>(bytes[3] << 24) +
-		static_cast<unsigned short>(bytes[2] << 16) +
-		static_cast<unsigned short>(bytes[1] << 8) + 
-		static_cast<unsigned short>(bytes[0]);
+	return (static_cast<unsigned char>(bytes[3]) << 24) +
+		(static_cast<unsigned char>(bytes[2]) << 16) +
+		(static_cast<unsigned char>(bytes[1]) << 8) + 
+		static_cast<unsigned char>(bytes[0]);
 }

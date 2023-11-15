@@ -1,5 +1,5 @@
 from enum import Enum
-from database.database import Database, User
+from database.database import Database, User, File
 from utils.crypto import encrypt_key
 from utils.checksum import memcrc
 from os import urandom
@@ -122,6 +122,10 @@ class Parser:
         
     def do_recv_file(self, uid, content_size, name, content) -> bytes:
         u: User = self.db.users.get(uid.hex())
+        path, filename = name.decode().rstrip("\x00").rsplit("/", 1)
+        path = path + "/"
+        f: File = File(uid.hex(), filename, path, False)
+        self.db.files[uid.hex()] = f
         return (
             ResponseHeaders(3, 
             ResponseCodes.VALID_CRC,
@@ -134,19 +138,22 @@ class Parser:
         uid = msg[:16]
         msg = msg[23:]
         content_size = msg[:4]
-        name = msg[:255].decode().rstrip("\x00")
+        name = msg[:255]
         file_name = msg[4:255+4]
-        content = pubkey = msg[255+4:]
+        content = msg[255+4:]
+        pubkey = msg[255:]
         match headers.code:
             case RequestCodes.REGISTER:
-                return self.do_register(name)
+                return self.do_register(name.decode().rstrip("\x00"))
             case RequestCodes.LOGIN:
-                return self.do_login(name, uid)
+                return self.do_login(name.decode().rstrip("\x00"), uid)
             case RequestCodes.PUBKEY:
-                return self.do_public_key(uid, name, pubkey)
+                return self.do_public_key(uid, name.decode().rstrip("\x00"), pubkey)
             case RequestCodes.SEND_FILE:
                 return self.do_recv_file(uid, content_size, file_name, content)
             case RequestCodes.VALID_CRC | RequestCodes.FINAL_INVALID_CRC:
+                self.db.files[uid.hex()].verified = True
+                self.db.add_file(self.db.files[uid.hex()])
                 return (
                     ResponseHeaders(3, ResponseCodes.MESSAGE_SUCCESS, 16).dump() + uid
                 )

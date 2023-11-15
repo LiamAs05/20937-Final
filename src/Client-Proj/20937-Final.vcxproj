@@ -41,9 +41,10 @@
     <Text Include="src\cool_file.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\me.info" />
-    <None Include="src\priv.key" />
     <None Include="src\transfer.info" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="src\seal_wallpaper.jpg" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

@@ -3,7 +3,7 @@ from pathlib import Path
 from sqlite3 import connect, Error
 from enum import Enum
 from utils.models import File, User
-
+from threading import Thread, Lock
 
 class Database:
     def __init__(self, in_memory: bool = False):
@@ -25,6 +25,7 @@ class Database:
         self.users: dict[str, User] = self.get_all_users()
         self.files: dict[str, File] = self.get_all_files()
         self.usernames: list = [x.name for x in list(self.users.values())]
+        self.mutex = Lock()
 
     def create_tables_if_not_exists(self) -> None:
         """
@@ -125,12 +126,17 @@ verified BOOLEAN)"""
         Args:
             user (User): User object containing all necessary data
         """
-        insert_query = "INSERT INTO users (id, name, publickey, last_seen, aes_key) VALUES (?, ?, ?, ?, ?)"
-        self.cursor.execute(insert_query, user.get_data())
-        self.cursor.connection.commit()
-        self.users[user.uid] = user
-        self.usernames.append(user.name)
-        print(f"Added user: {user.name} with unique id: {user.uid}")
+        with self.mutex:
+            try:
+                insert_query = "INSERT INTO users (id, name, publickey, last_seen, aes_key) VALUES (?, ?, ?, ?, ?)"
+                self.cursor.execute(insert_query, user.get_data())
+                self.cursor.connection.commit()
+                self.users[user.uid] = user
+                self.usernames.append(user.name)
+                print(f"Added user: {user.name} with unique id: {user.uid}")
+            except Error as e:
+                print(f"Error adding file: {e}")
+
 
     def add_file(self, file: File):
         """
@@ -143,23 +149,24 @@ verified BOOLEAN)"""
         - path_name: File path (TEXT)
         - verified: Boolean indicating whether the file is verified or not
         """
-        try:
-            # Insert a new record into the 'files' table
-            self.cursor.execute(
-                """
-                INSERT INTO files (id, file_name, path_name, verified)
-                VALUES (?, ?, ?, ?)
-            """,
-                file.get_data(),
-            )
+        with self.mutex:
+            try:
+                # Insert a new record into the 'files' table
+                self.cursor.execute(
+                    """
+                    INSERT INTO files (id, file_name, path_name, verified)
+                    VALUES (?, ?, ?, ?)
+                """,
+                    file.get_data(),
+                )
 
-            # Commit the changes to the database
-            self.cursor.connection.commit()
-            self.files[file.uid] = file
-            print(f"File '{file.filename}' added successfully.")
+                # Commit the changes to the database
+                self.cursor.connection.commit()
+                self.files[file.uid] = file
+                print(f"File '{file.filename}' added successfully.")
 
-        except Error as e:
-            print(f"Error adding file: {e}")
+            except Error as e:
+                print(f"Error adding file: {e}")
 
     def update_publickey(self, user_uid, new_publickey):
         """
@@ -168,14 +175,15 @@ verified BOOLEAN)"""
         :param new_publickey: The new public key value.
         """
         update_query = "UPDATE users SET publickey = ? WHERE id = ?"
-        try:
-            self.users[user_uid.hex()].pubkey = new_publickey
-            self.cursor.execute(update_query, (new_publickey, user_uid.hex()))
-            self.cursor.connection.commit()
+        with self.mutex:
+            try:
+                self.users[user_uid.hex()].pubkey = new_publickey
+                self.cursor.execute(update_query, (new_publickey, user_uid.hex()))
+                self.cursor.connection.commit()
 
-            print(f"Public key updated successfully for user with ID {user_uid}")
-        except Exception as e:
-            print(f"Error updating public key: {e}")
+                print(f"Public key updated successfully for user with ID {user_uid}")
+            except Exception as e:
+                print(f"Error updating public key: {e}")
             
     def update_aes(self, user_uid, new_aes):
         """
@@ -184,15 +192,15 @@ verified BOOLEAN)"""
         :param new_aes_key: The new AES key value.
         """
         update_query = "UPDATE users SET aes_key = ? WHERE id = ?"
+        with self.mutex:
+            try:
+                self.users[user_uid.hex()].aes_key = new_aes
+                self.cursor.execute(update_query, (new_aes, user_uid.hex()))
+                self.cursor.connection.commit()
 
-        try:
-            self.users[user_uid.hex()].aes_key = new_aes
-            self.cursor.execute(update_query, (new_aes, user_uid.hex()))
-            self.cursor.connection.commit()
-
-            print(f"AES key updated successfully for user with ID {user_uid}")
-        except Exception as e:
-            print(f"Error updating AES key: {e}")
+                print(f"AES key updated successfully for user with ID {user_uid}")
+            except Exception as e:
+                print(f"Error updating AES key: {e}")
 
     @staticmethod
     def __get_path() -> str:

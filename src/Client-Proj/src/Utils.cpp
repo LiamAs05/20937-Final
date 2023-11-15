@@ -488,9 +488,12 @@ std::string Utils::file_dump(const std::string& path)
 {
 	std::stringstream ret("");
 	std::ifstream file;
-
+	std::filesystem::path p{ path };
+	
 	try {
 		std::string content;
+		auto size = file_size(p);
+		content.resize(size);
 		file.open(path);
 
 		while (getline(file, content)) {

@@ -11,6 +11,7 @@
 #include "RSAWrapper.h"
 #include "AESWrapper.h"
 #include "Base64Wrapper.h"
+
 /**
  * \brief Ever wanted something repeated 3 times?
  * \param code Code block to repeat
@@ -42,9 +43,14 @@ public:
 	void set_id(std::array<char, size_req_client_id>& id);
 	void set_aes_key(const std::vector<unsigned char>& new_key);
 	std::vector<unsigned char> get_aes_key();
+	unsigned int crc = 0;
 
 private:
 	// internal client utility functions
+	void send_invalid_crc();
+	void send_final_invalid_crc();
+	void send_valid_crc();
+	bool send_file();
 	void send_public_key();
 	void establish_server_connectivity();
 	void get_transfer_info();

@@ -25,10 +25,11 @@ bool ResponseParser::parse_code(ResponseCodes code, std::vector<char>& response,
 	// ReSharper disable once CppLocalVariableMayBeConst
 	std::vector<char> payload(payload_size);
 	std::array<char, size_req_client_id> uid;
-	std::vector<unsigned char> aes(payload_size - 16);
-
+	std::vector<unsigned char> aes;
+	std::array<char, 4> res_crc;
 	if (payload_size) {
 		client->recv(payload.data(), payload_size);
+		aes.resize(payload_size - 16);
 	}
 
 	switch (code)
@@ -47,7 +48,12 @@ bool ResponseParser::parse_code(ResponseCodes code, std::vector<char>& response,
 			<< std::hex << +aes[0] << +aes[1] << +aes[2] << +aes[3] << " received" << std::dec << std::endl;
 		return true;
 	case valid_crc:
-		return true;
+		std::copy_n(payload.end() - 4, 4, res_crc.begin());
+		if (client->crc ==  bytes_to_int(res_crc))
+		{
+			return true;
+		}
+		return false;
 	case message_success:
 		std::copy_n(payload.begin(), size_req_client_id, uid.begin());
 		client->set_id(uid);
@@ -61,7 +67,7 @@ bool ResponseParser::parse_code(ResponseCodes code, std::vector<char>& response,
 2. The Public RSA Key is invalid.\nClient ID: " << client->get_id() << std::endl;
 		return false;
 	case general_error:
-		std::cerr << "ERROR: General server failure" << std::endl;
+		std::cerr << "ERROR: General server failure OR Invalid File CRC" << std::endl;
 		return false;
 	}
 }

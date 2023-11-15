@@ -41,6 +41,7 @@
     <Text Include="src\cool_file.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\me.info" />
     <None Include="src\priv.key" />
     <None Include="src\transfer.info" />
   </ItemGroup>

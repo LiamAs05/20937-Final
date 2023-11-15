@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 enum HeaderSizes
 {
@@ -33,9 +34,9 @@ public:
 	std::vector<char> build_req_register(char* name);
 	std::vector<char> build_req_send_public_key(char* name, char* public_key);
 	std::vector<char> build_req_login(char* name);
-	std::vector<char> build_req_send_file(unsigned int content_size,
-		char* file_name,
-		std::vector<char> content
+	std::vector<char> build_req_send_file(unsigned long long content_size,
+		std::string file_name,
+		std::string content
 	);
 	std::vector<char> build_req_valid_crc(char* file_name);
 	std::vector<char> build_req_invalid_crc(char* file_name);

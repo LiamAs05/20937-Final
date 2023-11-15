@@ -1,6 +1,7 @@
 from enum import Enum
 from database.database import Database, User
 from utils.crypto import encrypt_key
+from utils.checksum import memcrc
 from os import urandom
 
 
@@ -56,13 +57,13 @@ class ResponseHeaders:
         return code.value.to_bytes(2, "little")
 
     @staticmethod
-    def __int_to_bytes(code: int, len: int) -> bytes:
+    def int_to_bytes(code: int, len: int) -> bytes:
         return code.to_bytes(len, "little")
 
     def __init__(self, version: int, code: ResponseCodes, payload_size: int):
-        self.version = self.__int_to_bytes(version, 1)
+        self.version = self.int_to_bytes(version, 1)
         self.code = self.__code_to_bytes(code)
-        self.payload_size = self.__int_to_bytes(payload_size, 4)
+        self.payload_size = self.int_to_bytes(payload_size, 4)
 
     def dump(self) -> bytes:
         return self.version + self.code + self.payload_size
@@ -118,13 +119,24 @@ class Parser:
             + uid
             + key
         )
+        
+    def do_recv_file(self, uid, content_size, name, content) -> bytes:
+        u: User = self.db.users.get(uid.hex())
+        return (
+            ResponseHeaders(3, 
+            ResponseCodes.VALID_CRC,
+            16 + 4 + 255 + 4).dump() +
+            uid + content_size + name + ResponseHeaders.int_to_bytes(memcrc(content), 4)
+        )
 
     def parse_message_content(self, msg: bytes) -> bytes:
         headers = Parser.parse_headers(msg)
         uid = msg[:16]
         msg = msg[23:]
-        name = msg[:160].decode().rstrip("\x00")
-        pubkey = msg[255:]
+        content_size = msg[:4]
+        name = msg[:255].decode().rstrip("\x00")
+        file_name = msg[4:255+4]
+        content = pubkey = msg[255+4:]
         match headers.code:
             case RequestCodes.REGISTER:
                 return self.do_register(name)
@@ -132,13 +144,15 @@ class Parser:
                 return self.do_login(name, uid)
             case RequestCodes.PUBKEY:
                 return self.do_public_key(uid, name, pubkey)
-            # case RequestCodes.SEND_FILE:
-            #     pass  TODO 2103
+            case RequestCodes.SEND_FILE:
+                return self.do_recv_file(uid, content_size, file_name, content)
             case RequestCodes.VALID_CRC | RequestCodes.FINAL_INVALID_CRC:
                 return (
                     ResponseHeaders(3, ResponseCodes.MESSAGE_SUCCESS, 16).dump() + uid
                 )
             case RequestCodes.INVALID_CRC:
-                pass
+                return (
+                    ResponseHeaders(3, ResponseCodes.GENERAL_ERROR, 0).dump()
+                )
             case _:
-                return ResponseHeaders(3, ResponseCodes.GENERAL_ERROR, 0)
+                return ResponseHeaders(3, ResponseCodes.GENERAL_ERROR, 0).dump()

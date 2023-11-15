@@ -23,6 +23,23 @@ Client::Client() :
     {
         send_public_key();
     }
+
+    // ReSharper disable once CppCStyleCast
+    const std::string aes_decrypted = private_key_wrapper->decrypt((char*)aes_key.data(), aes_key.size());
+    // ReSharper disable once CppCStyleCast
+    aes_wrapper = new AESWrapper((unsigned char*)aes_decrypted.c_str(), aes_decrypted.size());
+    bool is_crc_good = false;
+    REPEAT_THREE_TIMES(
+        if (send_file())
+        {
+            send_valid_crc();
+            is_crc_good = true;
+            break;
+        }
+		send_invalid_crc();
+    )
+    if (!is_crc_good)
+		send_final_invalid_crc();
 }
 
 Client::~Client()
@@ -31,6 +48,48 @@ Client::~Client()
     delete aes_wrapper;
     private_key_wrapper = nullptr;
     aes_wrapper = nullptr;
+}
+
+void Client::send_invalid_crc()
+{
+    auto req = req_builder.build_req_invalid_crc(const_cast<char*>(path.c_str()));
+    send(req.data(), req.size());
+    recv(req.data(), size_res_headers);
+    res_parser.parse_response(req);
+}
+
+void Client::send_final_invalid_crc()
+{
+    auto req = req_builder.build_req_final_invalid_crc(const_cast<char*>(path.c_str()));
+    send(req.data(), req.size());
+    recv(req.data(), size_res_headers);
+    res_parser.parse_response(req);
+}
+
+void Client::send_valid_crc()
+{
+    auto req = req_builder.build_req_valid_crc(const_cast<char*>(path.c_str()));
+    send(req.data(), req.size());
+    recv(req.data(), size_res_headers);
+    res_parser.parse_response(req);
+}
+
+bool Client::send_file()
+{
+	const std::string file_content = Utils::file_dump(path);
+    const std::string encrypted_content = aes_wrapper->encrypt(file_content.data(), (unsigned)file_content.size());
+	auto req = req_builder.build_req_send_file(encrypted_content.size(),
+        path, encrypted_content);
+    send(req.data(), req.size());
+    recv(req.data(), size_res_headers);
+    crc = Utils::memcrc((char*)encrypted_content.c_str(), encrypted_content.size());
+
+    if (res_parser.parse_response(req))
+    {
+        return true;
+    }
+    
+    return false;
 }
 
 void Client::send_public_key()

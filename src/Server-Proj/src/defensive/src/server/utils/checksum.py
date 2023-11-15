@@ -4,7 +4,6 @@ python.
 
 The constants and routine are cribbed from the POSIX man page
 """
-import sys
 
 crctab = [
     0x00000000,

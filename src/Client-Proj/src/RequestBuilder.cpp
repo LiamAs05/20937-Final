@@ -42,16 +42,17 @@ std::vector<char> RequestBuilder::build_req_login(char* name)
 	return req;
 }
 
-std::vector<char> RequestBuilder::build_req_send_file(const unsigned content_size, char* file_name, std::vector<char> content)
+std::vector<char> RequestBuilder::build_req_send_file(const unsigned long long content_size, std::string file_name, std::string content)
 {
 	constexpr int content_size_bytes = 4;
-	add_fields_to_header(code_valid_crc, size_name + size_req_payload_size);
+	add_fields_to_header(code_send_file, size_name + size_req_payload_size);
 	std::vector<char> req(size_headers + content_size_bytes + size_name + content_size);
 	std::array<char, 4> content_size_converted = int_to_bytearray(content_size);
-
+	std::string filename_padded(size_name, 0);
+	std::copy_n(file_name.begin(), file_name.size(), filename_padded.begin());
 	std::copy(std::begin(const_headers), std::end(const_headers), std::begin(req));
 	std::copy(std::begin(content_size_converted), std::end(content_size_converted), std::begin(req) + size_headers);
-	std::copy_n(file_name, size_name, std::begin(req) + size_headers + size_req_payload_size);
+	std::copy_n(filename_padded.begin(), size_name, std::begin(req) + size_headers + size_req_payload_size);
 	std::copy(content.begin(), content.end(), 
 		std::begin(req) + size_headers + size_req_payload_size + size_name);
 	return req;
